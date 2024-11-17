@@ -45,7 +45,17 @@ class Hangman(Game):
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
-        pass
+
+        # all_letters contains all possible letters for the player
+        all_letters = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        guessed_letters = set(self._state.guesses)
+
+        # Computes all unguessed letters
+        unguessed_letters = all_letters - guessed_letters
+
+        # Creates a GuessLetterAction for each unguessed letter
+        return [GuessLetterAction(letter) for letter in sorted(unguessed_letters)]
+
 
     def apply_action(self, action: GuessLetterAction) -> None:
         """ Apply the given action to the game """
