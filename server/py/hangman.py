@@ -45,7 +45,11 @@ class Hangman(Game):
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
-        pass
+        masked_word = ''.join([letter if letter.lower() in self.state.guesses else '_' for letter in self.state.word_to_guess])
+        print(f"Word to guess: {masked_word}")
+        print(f"Guessed letters: {', '.join(self.state.guesses)}")
+        print(f"Incorrect guesses: {', '.join(self.state.incorrect_guesses)}")
+        print(f"Phase: {self.state.phase}")
 
     def apply_action(self, action: GuessLetterAction) -> None:
         """ Apply the given action to the game """
