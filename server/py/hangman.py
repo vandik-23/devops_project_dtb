@@ -1,7 +1,7 @@
 from typing import List, Optional
 import random
 from enum import Enum
-from server.py.game import Game, Player
+#from server.py.game import Game, Player
 
 
 class GuessLetterAction:
@@ -24,12 +24,33 @@ class HangmanGameState:
         self.guesses = guesses
         self.incorrect_guesses = incorrect_guesses
 
+# Placeholder for Game and Player classes
+class Game:
+    def __init__(self):
+        pass
+
+class Player:
+    def __init__(self):
+        pass
 
 class Hangman(Game):
 
-    def __init__(self) -> None:
+    def __init__(self, word_to_guess:str ="") -> None:
         """ Important: Game initialization also requires a set_state call to set the 'word_to_guess' """
-        pass
+        super().__init__()  # Initialize the parent class
+        self.word_to_guess = word_to_guess.lower()
+        self.guessed_word = ["_"] * len(word_to_guess)  # Masked word representation
+        self.guessed_letters = set()
+        self.incorrect_guesses = []  # List of incorrect guesses
+        self.phase = GamePhase.SETUP  # Initial phase
+        self.max_attempts = 10
+        self.wrong_guesses = 0
+        self.set_state(HangmanGameState(
+            word_to_guess=self.word_to_guess,
+            phase=self.phase,
+            guesses=[],
+            incorrect_guesses=[]
+        ))
 
     def get_state(self) -> HangmanGameState:
         """ Set the game to a given state """
