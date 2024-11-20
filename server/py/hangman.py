@@ -29,27 +29,50 @@ class Hangman(Game):
 
     def __init__(self) -> None:
         """ Important: Game initialization also requires a set_state call to set the 'word_to_guess' """
-        pass
+        self.state = None
 
     def get_state(self) -> HangmanGameState:
         """ Set the game to a given state """
-        pass
+        if self.state is None:
+            raise Exception("Game not started yet")
+        return self.state
 
     def set_state(self, state: HangmanGameState) -> None:
         """ Get the complete, unmasked game state """
-        pass
+        self.state = state
 
     def print_state(self) -> None:
         """ Print the current game state """
-        pass
+        state = self.get_state()
+        print(f"Word to guess: {state.word_to_guess}")
+        print(f"Phase: {state.phase}")
+        print(f"Guesses: {state.guesses}")
+        print(f"Incorrect guesses: {state.incorrect_guesses}")
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
-        pass
+        state = self.get_state()
+        if state.phase == GamePhase.RUNNING:
+            return [
+                GuessLetterAction(letter) for letter in 'abcdefghijklmnopqrstuvwxyz' 
+                if letter not in state.guesses and letter not in state.incorrect_guesses
+            ]
 
     def apply_action(self, action: GuessLetterAction) -> None:
         """ Apply the given action to the game """
-        pass
+        state = self.get_state()
+        
+        if state.phase != GamePhase.RUNNING:
+            state.phase = GamePhase.RUNNING
+        
+        if action.letter in state.word_to_guess:
+            state.guesses.append(action.letter)
+            if all(letter in state.guesses for letter in state.word_to_guess):
+                state.phase = GamePhase.FINISHED
+        else:
+            state.incorrect_guesses.append(action.letter)
+            if len(state.incorrect_guesses) >= 8:
+                state.phase = GamePhase.FINISHED
 
     def get_player_view(self, idx_player: int) -> HangmanGameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
