@@ -48,7 +48,9 @@ class Hangman(Game):
 
         # all_letters contains all possible letters for the player
         all_letters = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-        guessed_letters = set(self._state.guesses)
+
+        # from current game state all guessed letters
+        guessed_letters = set(letter.upper() for letter in self.state.guesses)
 
         # Computes all unguessed letters
         unguessed_letters = all_letters - guessed_letters
