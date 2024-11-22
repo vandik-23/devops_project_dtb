@@ -1,7 +1,7 @@
 from typing import List, Optional
 import random
 from enum import Enum
-from server.py.game import Game, Player
+#from server.py.game import Game, Player
 
 
 class GuessLetterAction:
@@ -24,10 +24,18 @@ class HangmanGameState:
         self.guesses = guesses
         self.incorrect_guesses = incorrect_guesses
 
+# Placeholder for Game and Player classes
+class Game:
+    def __init__(self):
+        pass
+
+class Player:
+    def __init__(self):
+        pass
 
 class Hangman(Game):
 
-    def __init__(self) -> None:
+    def __init__(self, word_to_guess:str ="") -> None:
         """ Important: Game initialization also requires a set_state call to set the 'word_to_guess' """
         self.state = None
 
@@ -41,13 +49,11 @@ class Hangman(Game):
         """ Get the complete, unmasked game state """
         self.state = state
 
+
+
     def print_state(self) -> None:
-        """ Print the current game state """
-        state = self.get_state()
-        print(f"Word to guess: {state.word_to_guess}")
-        print(f"Phase: {state.phase}")
-        print(f"Guesses: {state.guesses}")
-        print(f"Incorrect guesses: {state.incorrect_guesses}")
+        """Print the current game state."""
+        pass
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
@@ -76,7 +82,14 @@ class Hangman(Game):
 
     def get_player_view(self, idx_player: int) -> HangmanGameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
-        pass
+        masked_word = "".join([char if char in self.guessed_letters else "_" for char in self.word_to_guess])
+        
+        return HangmanGameState(
+            word_to_guess=masked_word,  # Masked version of the word
+            phase=self.phase,
+            guesses=list(self.guessed_letters),  # List of guessed letters
+            incorrect_guesses=self.incorrect_guesses  # List of incorrect guesses
+            )
 
 
 class RandomPlayer(Player):
