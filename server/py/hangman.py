@@ -1,7 +1,7 @@
 from typing import List, Optional
 import random
 from enum import Enum
-#from server.py.game import Game, Player
+from server.py.game import Game, Player
 
 
 class GuessLetterAction:
@@ -24,14 +24,6 @@ class HangmanGameState:
         self.guesses = guesses
         self.incorrect_guesses = incorrect_guesses
 
-# Placeholder for Game and Player classes
-class Game:
-    def __init__(self):
-        pass
-
-class Player:
-    def __init__(self):
-        pass
 
 class Hangman(Game):
 
