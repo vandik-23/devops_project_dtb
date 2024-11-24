@@ -17,7 +17,7 @@ class GamePhase(str, Enum):
     FINISHED = 'finished'  # when the game is finished
 
 
-class HangmanGameState:
+class HangmanGameState(BaseModel):
     word_to_guess: str
     phase: GamePhase
     guesses: List[str]
@@ -26,20 +26,26 @@ class HangmanGameState:
 
 class Hangman(Game):
 
-    def __init__(self) -> None:
+    def __init__(self, word_to_guess:str ="") -> None:
         """ Important: Game initialization also requires a set_state call to set the 'word_to_guess' """
-        pass
+        self.state = None
 
     def get_state(self) -> HangmanGameState:
         """ Set the game to a given state """
-        pass
+        if self.state is None:
+            raise Exception("Game state not set yet. Set the game state using `set_state` method.")
+        return self.state
 
     def set_state(self, state: HangmanGameState) -> None:
         """ Get the complete, unmasked game state """
-        pass
+        for letter in state.guesses:
+            if letter not in state.word_to_guess.upper():
+                state.incorrect_guesses.append(letter.upper())
+        
+        self.state = state
 
     def print_state(self) -> None:
-        """ Print the current game state """
+        """Print the current game state."""
         pass
 
     def get_list_action(self) -> List[GuessLetterAction]:
@@ -47,8 +53,18 @@ class Hangman(Game):
         pass
 
     def apply_action(self, action: GuessLetterAction) -> None:
-        """ Apply the given action to the game """
-        pass
+        """ Apply the given action to the game """        
+        if self.state.phase != GamePhase.RUNNING:
+            self.state.phase = GamePhase.RUNNING
+        
+        self.state.guesses.append(action.letter.upper()) # add letter to guesses
+        if all(letter in self.state.guesses for letter in self.state.word_to_guess.upper()):
+            self.state.phase = GamePhase.FINISHED
+        
+        if action.letter.upper() not in self.state.word_to_guess.upper():
+            self.state.incorrect_guesses.append(action.letter.upper()) # add letter to incorrect guesses
+            if len(self.state.incorrect_guesses) >= 8:
+                self.state.phase = GamePhase.FINISHED
 
     def get_player_view(self, idx_player: int) -> HangmanGameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
