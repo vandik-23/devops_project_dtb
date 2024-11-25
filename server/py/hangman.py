@@ -46,10 +46,13 @@ class Hangman(Game):
 
     def print_state(self) -> None:
         """Print the current game state."""
-        if self.state is not None:
-            print(self.state.model_dump())
+        masked_state = self.get_player_view()
+        
+        if masked_state is not None:
+            print(masked_state.model_dump())
         else:
             print("No state set yet. Use the `set_state()` method to set a state.")
+
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
@@ -83,7 +86,14 @@ class Hangman(Game):
 
     def get_player_view(self, idx_player: int) -> HangmanGameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
-        pass
+
+        masked_word = "".join([char if char.upper() in self.state.guesses else "_" for char in self.state.word_to_guess])
+        return HangmanGameState(
+            word_to_guess=masked_word,
+            phase=self.state.phase,
+            guesses=self.state.guesses,
+            incorrect_guesses=self.state.incorrect_guesses)
+
 
 
 class RandomPlayer(Player):
