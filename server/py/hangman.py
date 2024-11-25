@@ -46,11 +46,26 @@ class Hangman(Game):
 
     def print_state(self) -> None:
         """Print the current game state."""
-        pass
+        if self.state is not None:
+            print(self.state.model_dump())
+        else:
+            print("No state set yet. Use the `set_state()` method to set a state.")
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
-        pass
+
+        # all_letters contains all possible letters for the player
+        all_letters = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+
+        # from current game state all guessed letters
+        guessed_letters = set(letter.upper() for letter in self.state.guesses)
+
+        # Computes all unguessed letters
+        unguessed_letters = all_letters - guessed_letters
+
+        # Creates a GuessLetterAction for each unguessed letter
+        return [GuessLetterAction(letter) for letter in sorted(unguessed_letters)]
+
 
     def apply_action(self, action: GuessLetterAction) -> None:
         """ Apply the given action to the game """        
