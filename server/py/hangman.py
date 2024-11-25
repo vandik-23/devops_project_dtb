@@ -1,28 +1,27 @@
 from typing import List, Optional
 import random
 from enum import Enum
+
+from pydantic import BaseModel
+
 from server.py.game import Game, Player
 
 
-class GuessLetterAction:
-
-    def __init__(self, letter: str) -> None:
-        self.letter = letter
+class GuessLetterAction(BaseModel):
+    letter: str
 
 
 class GamePhase(str, Enum):
-    SETUP = 'setup'            # before the game has started
-    RUNNING = 'running'        # while the game is running
-    FINISHED = 'finished'      # when the game is finished
+    SETUP = 'setup'  # before the game has started
+    RUNNING = 'running'  # while the game is running
+    FINISHED = 'finished'  # when the game is finished
 
 
-class HangmanGameState:
-
-    def __init__(self, word_to_guess: str, phase: GamePhase, guesses: List[str], incorrect_guesses: List[str] = []) -> None:
-        self.word_to_guess = word_to_guess
-        self.phase = phase
-        self.guesses = guesses
-        self.incorrect_guesses = incorrect_guesses
+class HangmanGameState(BaseModel):
+    word_to_guess: str
+    phase: GamePhase
+    guesses: List[str]
+    incorrect_guesses: List[str]
 
 
 class Hangman(Game):
