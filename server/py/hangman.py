@@ -46,10 +46,13 @@ class Hangman(Game):
 
     def print_state(self) -> None:
         """Print the current game state."""
-        if self.state is not None:
-            print(self.state.model_dump())
+        masked_state = self.get_player_view()
+        
+        if masked_state is not None:
+            print(masked_state.model_dump())
         else:
             print("No state set yet. Use the `set_state()` method to set a state.")
+
 
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
