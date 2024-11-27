@@ -8,7 +8,7 @@ class HangmanBenchmark(Benchmark):
     def test_set_state_method(self) -> None:
         """Test 001: Set/get methods work properly [1 point]"""
         self.game_server.reset()
-        state = HangmanGameState(word_to_guess="devops", guesses=[], phase=GamePhase.RUNNING, incorrect_guesses=[])
+        state = HangmanGameState(word_to_guess='devops', guesses=[], phase=GamePhase.RUNNING, incorrect_guesses=[])
         self.game_server.set_state(state)
         game_state = self.game_server.get_state()
         hint = "Applying 'set_state' and then 'get_state' returns a different state"
@@ -19,7 +19,7 @@ class HangmanBenchmark(Benchmark):
     def test_action_list(self) -> None:
         """Test 002: Action list contains only 'unused' capital letters [1 point]"""
         self.game_server.reset()
-        state = HangmanGameState(word_to_guess="devops", guesses=[], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        state = HangmanGameState(word_to_guess='devops', guesses=[], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(state)
 
         # initial actions
@@ -28,7 +28,7 @@ class HangmanBenchmark(Benchmark):
         assert {action.letter for action in actions} == set(string.ascii_uppercase), hint
 
         # testcase 1
-        test_state1 = HangmanGameState(word_to_guess="", guesses=["A", "B", "C"], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        test_state1 = HangmanGameState(word_to_guess="", guesses=['A', 'B', 'C'], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(test_state1)
         actions1 = self.game_server.get_list_action()
         hint = "Some 'guessed' letters are still in the action list"
@@ -43,7 +43,7 @@ class HangmanBenchmark(Benchmark):
     def test_apply_action_general(self) -> None:
         """Test 003: Apply action method adds new guess to gamestate [1 point]"""
         self.game_server.reset()
-        state = HangmanGameState(word_to_guess="devops", guesses=[], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        state = HangmanGameState(word_to_guess='devops', guesses=[], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(state)
         self.game_server.apply_action(GuessLetterAction(letter="D"))
         state = self.game_server.get_state()
@@ -53,7 +53,7 @@ class HangmanBenchmark(Benchmark):
     def test_apply_action_lowercase(self) -> None:
         """Test 004: Apply action also works for lowercase letters [1 point]"""
         self.game_server.reset()
-        state = HangmanGameState(word_to_guess="devops", guesses=[], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        state = HangmanGameState(word_to_guess='devops', guesses=[], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(state)
         self.game_server.apply_action(GuessLetterAction(letter="x"))
         state = self.game_server.get_state()
@@ -64,14 +64,14 @@ class HangmanBenchmark(Benchmark):
         self.game_server.reset()
 
         # 8 wrong guesses
-        test_state1 = HangmanGameState(word_to_guess="XY", guesses=[*"ABCDEFG"], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        test_state1 = HangmanGameState(word_to_guess="XY", guesses=[*'ABCDEFG'], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(test_state1)
         self.game_server.apply_action(GuessLetterAction(letter="H"))
         hint = "Gamephase should be 'FINISHED' after 8 wrong guesses"
         assert self.game_server.get_state().phase == GamePhase.FINISHED, hint
 
         # secret word is revealed
-        test_state2 = HangmanGameState(word_to_guess="XY", guesses=[*"AX"], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        test_state2 = HangmanGameState(word_to_guess="XY", guesses=[*'AX'], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(test_state2)
         self.game_server.apply_action(GuessLetterAction(letter="Y"))
         hint = "Gamephase should be 'FINISHED' after revealing the secret word"
@@ -80,7 +80,7 @@ class HangmanBenchmark(Benchmark):
     def test_secret_word_lowercase_letters(self) -> None:
         """Test 006: Game also works when secret words contain lowercase letters [1 point]"""
         self.game_server.reset()
-        test_state1 = HangmanGameState(word_to_guess="Xy", guesses=[*"AY"], incorrect_guesses=[], phase=GamePhase.RUNNING)
+        test_state1 = HangmanGameState(word_to_guess="Xy", guesses=[*'AY'], incorrect_guesses=[], phase=GamePhase.RUNNING)
         self.game_server.set_state(test_state1)
         self.game_server.apply_action(GuessLetterAction(letter="x"))
         assert self.game_server.get_state().phase == GamePhase.FINISHED
