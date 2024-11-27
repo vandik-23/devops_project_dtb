@@ -46,10 +46,8 @@ class Hangman(Game):
 
     def print_state(self) -> None:
         """Print the current game state."""
-        masked_state = self.get_player_view()
-        
-        if masked_state is not None:
-            print(masked_state.model_dump())
+        if self.state is not None:
+            print(self.state.model_dump())
         else:
             print("No state set yet. Use the `set_state()` method to set a state.")
 
