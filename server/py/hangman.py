@@ -84,7 +84,7 @@ class Hangman(Game):
             if len(self.state.incorrect_guesses) >= 8:
                 self.state.phase = GamePhase.FINISHED
 
-    def get_player_view(self, idx_player: int) -> HangmanGameState:
+    def get_player_view(self, idx_player: Optional[int] = None) -> HangmanGameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
 
         masked_word = "".join([char if char.upper() in self.state.guesses else "_" for char in self.state.word_to_guess])
