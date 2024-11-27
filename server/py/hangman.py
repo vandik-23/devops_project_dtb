@@ -64,7 +64,7 @@ class Hangman(Game):
         unguessed_letters = all_letters - guessed_letters
 
         # Creates a GuessLetterAction for each unguessed letter
-        return [GuessLetterAction(letter) for letter in sorted(unguessed_letters)]
+        return [GuessLetterAction(letter=letter) for letter in sorted(unguessed_letters)]
 
 
     def apply_action(self, action: GuessLetterAction) -> None:
