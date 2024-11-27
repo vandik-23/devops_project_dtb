@@ -51,7 +51,6 @@ class Hangman(Game):
         else:
             print("No state set yet. Use the `set_state()` method to set a state.")
 
-
     def get_list_action(self) -> List[GuessLetterAction]:
         """ Get a list of possible actions for the active player """
 
