@@ -1,6 +1,6 @@
 # runcmd: cd ../.. & venv\Scripts\python server/py/dog_template.py
 from server.py.game import Game, Player
-from typing import List, Optional, ClassVar
+from typing import List, Optional, ClassVar, Literal
 from pydantic import BaseModel
 from enum import Enum
 import random
@@ -12,13 +12,15 @@ class Card(BaseModel):
 
 
 class Marble(BaseModel):
-    pos: str       # position on board (0 to 95)
-    is_save: bool  # true if marble was moved out of kennel and was not yet moved
+    pos: str  # position on board (0 to 95)
+    is_save: bool = False  # true if marble was moved out of kennel and was not yet moved
+    in_kennel: bool = True  # true if marble is in kennel
 
 
 class PlayerState(BaseModel):
-    name: str                  # name of player
-    list_card: List[Card]      # list of cards
+    name: str  # name of player
+    colour: Literal["red", "blue", "green", "yellow"]  # colour of player
+    list_card: List[Card]  # list of cards
     list_marble: List[Marble]  # list of marbles
 
 
@@ -89,7 +91,44 @@ class Dog(Game):
 
     def __init__(self) -> None:
         """ Game initialization (set_state call not necessary, we expect 4 players) """
-        pass
+        random.shuffle(GameState.LIST_CARD)
+        self.state = GameState(
+            phase=GamePhase.RUNNING,
+            cnt_round=1,
+            bool_game_finished=False,
+            bool_card_exchanged=False,
+            idx_player_started=0,
+            idx_player_active=0,
+            list_player=[
+                PlayerState(
+                    name="Tick",
+                    colour="blue",
+                    list_card=GameState.LIST_CARD[:6],
+                    list_marble=[Marble(pos="64"), Marble(pos="65"), Marble(pos="66"), Marble(pos="67")],
+                ),
+                PlayerState(
+                    name="Trick",
+                    colour="green",
+                    list_card=GameState.LIST_CARD[6:12],
+                    list_marble=[Marble(pos="72"), Marble(pos="73"), Marble(pos="74"), Marble(pos="75")],
+                ),
+                PlayerState(
+                    name="Track",
+                    colour="red",
+                    list_card=GameState.LIST_CARD[12:18],
+                    list_marble=[Marble(pos="80"), Marble(pos="81"), Marble(pos="82"), Marble(pos="83")],
+                ),
+                PlayerState(
+                    name="Donald",
+                    colour="yellow",
+                    list_card=GameState.LIST_CARD[18:24],
+                    list_marble=[Marble(pos="88"), Marble(pos="89"), Marble(pos="90"), Marble(pos="91")],
+                ),
+            ],
+            list_card_draw=GameState.LIST_CARD[24:],
+            list_card_discard=[],
+            card_active=None,
+        )
 
     def set_state(self, state: GameState) -> None:
         """ Set the game to a given state """
