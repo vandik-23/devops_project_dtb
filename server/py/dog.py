@@ -26,9 +26,9 @@ class PlayerState(BaseModel):
 
 class Action(BaseModel):
     card: Card  # card to play
-    pos_from: Optional[int] = None  # position to move the marble from
-    pos_to: Optional[int] = None  # position to move the marble to
-    card_swap: Optional[Card] = None  # optional card to swap ()
+    pos_from: Optional[int] = None # position to move the marble from
+    pos_to: Optional[int] = None # position to move the marble to
+    card_swap: Optional[Card] = None # optional card to swap ()
 
 
 class GamePhase(str, Enum):
@@ -40,91 +40,38 @@ class GamePhase(str, Enum):
 class GameState(BaseModel):
     LIST_SUIT: ClassVar[List[str]] = ["♠", "♥", "♦", "♣"]  # 4 suits (colors)
     LIST_RANK: ClassVar[List[str]] = [
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",  # 13 ranks + Joker
-        "J",
-        "Q",
-        "K",
-        "A",
-        "JKR",
+        "2", "3", "4", "5", "6", "7", "8", "9", "10",  # 13 ranks + Joker
+        "J", "Q", "K", "A", "JKR"
     ]
     LIST_CARD: ClassVar[List[Card]] = [
         # 2: Move 2 spots forward
-        Card(suit="♠", rank="2"),
-        Card(suit="♥", rank="2"),
-        Card(suit="♦", rank="2"),
-        Card(suit="♣", rank="2"),
+        Card(suit="♠", rank="2"), Card(suit="♥", rank="2"), Card(suit="♦", rank="2"), Card(suit="♣", rank="2"),
         # 3: Move 3 spots forward
-        Card(suit="♠", rank="3"),
-        Card(suit="♥", rank="3"),
-        Card(suit="♦", rank="3"),
-        Card(suit="♣", rank="3"),
+        Card(suit="♠", rank="3"), Card(suit="♥", rank="3"), Card(suit="♦", rank="3"), Card(suit="♣", rank="3"),
         # 4: Move 4 spots forward or back
-        Card(suit="♠", rank="4"),
-        Card(suit="♥", rank="4"),
-        Card(suit="♦", rank="4"),
-        Card(suit="♣", rank="4"),
+        Card(suit="♠", rank="4"), Card(suit="♥", rank="4"), Card(suit="♦", rank="4"), Card(suit="♣", rank="4"),
         # 5: Move 5 spots forward
-        Card(suit="♠", rank="5"),
-        Card(suit="♥", rank="5"),
-        Card(suit="♦", rank="5"),
-        Card(suit="♣", rank="5"),
+        Card(suit="♠", rank="5"), Card(suit="♥", rank="5"), Card(suit="♦", rank="5"), Card(suit="♣", rank="5"),
         # 6: Move 6 spots forward
-        Card(suit="♠", rank="6"),
-        Card(suit="♥", rank="6"),
-        Card(suit="♦", rank="6"),
-        Card(suit="♣", rank="6"),
+        Card(suit="♠", rank="6"), Card(suit="♥", rank="6"), Card(suit="♦", rank="6"), Card(suit="♣", rank="6"),
         # 7: Move 7 single steps forward
-        Card(suit="♠", rank="7"),
-        Card(suit="♥", rank="7"),
-        Card(suit="♦", rank="7"),
-        Card(suit="♣", rank="7"),
+        Card(suit="♠", rank="7"), Card(suit="♥", rank="7"), Card(suit="♦", rank="7"), Card(suit="♣", rank="7"),
         # 8: Move 8 spots forward
-        Card(suit="♠", rank="8"),
-        Card(suit="♥", rank="8"),
-        Card(suit="♦", rank="8"),
-        Card(suit="♣", rank="8"),
+        Card(suit="♠", rank="8"), Card(suit="♥", rank="8"), Card(suit="♦", rank="8"), Card(suit="♣", rank="8"),
         # 9: Move 9 spots forward
-        Card(suit="♠", rank="9"),
-        Card(suit="♥", rank="9"),
-        Card(suit="♦", rank="9"),
-        Card(suit="♣", rank="9"),
+        Card(suit="♠", rank="9"), Card(suit="♥", rank="9"), Card(suit="♦", rank="9"), Card(suit="♣", rank="9"),
         # 10: Move 10 spots forward
-        Card(suit="♠", rank="10"),
-        Card(suit="♥", rank="10"),
-        Card(suit="♦", rank="10"),
-        Card(suit="♣", rank="10"),
+        Card(suit="♠", rank="10"), Card(suit="♥", rank="10"), Card(suit="♦", rank="10"), Card(suit="♣", rank="10"),
         # Jake: A marble must be exchanged
-        Card(suit="♠", rank="J"),
-        Card(suit="♥", rank="J"),
-        Card(suit="♦", rank="J"),
-        Card(suit="♣", rank="J"),
+        Card(suit="♠", rank="J"), Card(suit="♥", rank="J"), Card(suit="♦", rank="J"), Card(suit="♣", rank="J"),
         # Queen: Move 12 spots forward
-        Card(suit="♠", rank="Q"),
-        Card(suit="♥", rank="Q"),
-        Card(suit="♦", rank="Q"),
-        Card(suit="♣", rank="Q"),
+        Card(suit="♠", rank="Q"), Card(suit="♥", rank="Q"), Card(suit="♦", rank="Q"), Card(suit="♣", rank="Q"),
         # King: Start or move 13 spots forward
-        Card(suit="♠", rank="K"),
-        Card(suit="♥", rank="K"),
-        Card(suit="♦", rank="K"),
-        Card(suit="♣", rank="K"),
+        Card(suit="♠", rank="K"), Card(suit="♥", rank="K"), Card(suit="♦", rank="K"), Card(suit="♣", rank="K"),
         # Ass: Start or move 1 or 11 spots forward
-        Card(suit="♠", rank="A"),
-        Card(suit="♥", rank="A"),
-        Card(suit="♦", rank="A"),
-        Card(suit="♣", rank="A"),
+        Card(suit="♠", rank="A"), Card(suit="♥", rank="A"), Card(suit="♦", rank="A"), Card(suit="♣", rank="A"),
         # Joker: Use as any other card you want
-        Card(suit="", rank="JKR"),
-        Card(suit="", rank="JKR"),
-        Card(suit="", rank="JKR"),
+        Card(suit="", rank="JKR"), Card(suit="", rank="JKR"), Card(suit="", rank="JKR"),
     ] * 2
 
     cnt_player: int = 4  # number of players (must be 4)
