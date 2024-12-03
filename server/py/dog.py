@@ -1,9 +1,11 @@
 # runcmd: cd ../.. & venv\Scripts\python server/py/dog_template.py
-from server.py.game import Game, Player
-from typing import Any, List, Optional, ClassVar, Literal
-from pydantic import BaseModel
-from enum import Enum
 import random
+from enum import Enum
+from typing import Any, ClassVar, List, Literal, Optional
+
+from pydantic import BaseModel
+
+from server.py.game import Game, Player
 
 
 class Card(BaseModel):
@@ -165,17 +167,13 @@ class Dog(Game):
     def get_list_action(self) -> List[Action]:
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
-        marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(
-            player
-        )
+        marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
         if len(marbles_in_kennel) == 4:
             return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
         else:
             pass  # TODO: implement for other tests
 
-    def _get_marbles_in_kennel_and_in_play(
-        self, player: PlayerState
-    ) -> tuple[list[Marble], list[Marble]]:
+    def _get_marbles_in_kennel_and_in_play(self, player: PlayerState) -> tuple[list[Marble], list[Marble]]:
         marbles_in_play, marbles_in_kennel = [], []
         for marble in player.list_marble:
             if not marble.in_kennel:
@@ -184,11 +182,7 @@ class Dog(Game):
                 marbles_in_kennel.append(marble)
         return marbles_in_play, marbles_in_kennel
 
-    def _if_all_marbles_in_kennel(
-        self,
-        player: PlayerState,
-        marbles_in_kennel: list[Marble],
-    ) -> list[Action]:
+    def _if_all_marbles_in_kennel(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
         """Lists all actions that are possible if all marbles of a player are in the kennel."""
         kennels_and_start = KennelAndStartNumbers[player.colour]
         card_ranks = [card.rank for card in player.list_card]
