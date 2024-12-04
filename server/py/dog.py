@@ -202,7 +202,32 @@ class Dog(Game):
 
     def apply_action(self, action: Action) -> None:
         """ Apply the given action to the game """
-        pass
+        player = self.state.list_player[self.state.idx_player_active]
+        current_position = action.pos_from
+        destination = action.pos_to
+        idx = self._get_marble_idx_from_position(player, current_position)
+        if idx < 0:
+            raise ValueError("You don't have a marble at your specified position.")
+        player.list_marble[idx].pos = destination
+        player.list_marble[idx].is_save = True
+        player.list_marble[idx].in_kennel = False
+        idx = self._get_card_idx_in_hand(player, action)
+        if idx < 0:
+            raise ValueError("You don't have a this card in Hand.")
+        player.list_card.pop(idx)
+        return None
+
+    def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
+        for i, marble in enumerate(player.list_marble):
+            if int(marble.pos) == position:
+                return i
+        return -1
+    
+    def _get_card_idx_in_hand(self, player: PlayerState, action: Action) -> int:
+        for i, card in enumerate(player.list_card):
+            if card.suit == action.card.suit and card.rank == action.card.rank:
+                return i
+        return -1
 
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
