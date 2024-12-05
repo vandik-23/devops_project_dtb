@@ -167,7 +167,7 @@ class Dog(Game):
             pass  # TODO: implement for other tests
 
     def _get_marbles_in_kennel_and_in_play(self, player: PlayerState) -> tuple[list[Marble], list[Marble]]:
-        kennel_positions = KennelNumbers[player.colour]["kennel"]
+        kennel_positions = KennelNumbers[player.colour]
         marbles_in_play, marbles_in_kennel = [], []
         for marble in player.list_marble:
             if marble.pos not in kennel_positions:
@@ -178,7 +178,7 @@ class Dog(Game):
 
     def _if_all_marbles_in_kennel(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
         """Lists all actions that are possible if all marbles of a player are in the kennel."""
-        start_position = StartNumbers[player.colour]["start"]
+        start_position = StartNumbers[player.colour]
         card_ranks = [card.rank for card in player.list_card]
         if not any(item in card_ranks for item in ["JKR", "A", "K"]):
             return []
