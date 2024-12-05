@@ -7,11 +7,6 @@
 
 Please mark the tests that have passed.
 
-<div style="display: flex;">
-
-<div style="margin-right: 20px;">
-
-#### Tests 1 - 19
 - [ ] Test 1
 - [ ] Test 2
 - [ ] Test 3
@@ -31,12 +26,6 @@ Please mark the tests that have passed.
 - [ ] Test 17
 - [ ] Test 18
 - [ ] Test 19
-
-</div>
-
-<div style="margin-right: 20px;">
-
-#### Tests 20 - 38
 - [ ] Test 20
 - [ ] Test 21
 - [ ] Test 22
@@ -56,12 +45,6 @@ Please mark the tests that have passed.
 - [ ] Test 36
 - [ ] Test 37
 - [ ] Test 38
-
-</div>
-
-<div style="margin-right: 20px;">
-
-#### Test 39 - 102
 - [ ] Test 39
 - [ ] Test 40
 - [ ] Test 41
@@ -81,6 +64,3 @@ Please mark the tests that have passed.
 - [ ] Test 100
 - [ ] Test 101
 - [ ] Test 102
-
-</div>
-</div>
