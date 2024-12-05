@@ -203,8 +203,8 @@ class Dog(Game):
         if idx < 0:
             raise ValueError("You don't have a marble at your specified position.")
         player.list_marble[idx].pos = destination
-        player.list_marble[idx].is_save = True
-        player.list_marble[idx].in_kennel = False
+        if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
+            player.list_marble[idx].is_save = True
         idx = self._get_card_idx_in_hand(player, action)
         if idx < 0:
             raise ValueError("You don't have a this card in Hand.")
@@ -213,7 +213,7 @@ class Dog(Game):
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
-            if int(marble.pos) == position:
+            if marble.pos == position:
                 return i
         return -1
     
