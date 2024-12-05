@@ -1,7 +1,7 @@
 # runcmd: cd ../.. & venv\Scripts\python server/py/dog_template.py
 import random
 from enum import Enum
-from typing import Any, ClassVar, List, Literal, Optional
+from typing import ClassVar, List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -14,9 +14,8 @@ class Card(BaseModel):
 
 
 class Marble(BaseModel):
-    pos: str  # position on board (0 to 95)
+    pos: int # position on board (0 to 95)
     is_save: bool = False  # true if marble was moved out of kennel and was not yet moved
-    in_kennel: bool = True  # true if marble is in kennel
 
 
 class PlayerState(BaseModel):
@@ -88,27 +87,21 @@ class GameState(BaseModel):
     card_active: Optional[Card]  # active card (for 7 and JKR with sequence of actions)
 
 
-class KennelAndStartNumbers(dict[str, Any], Enum):
-    blue = {
-        "kennel": ["64", "65", "66", "67"],
-        "start": 0,
-    }
-    green = {
-        "kennel": ["72", "73", "74", "75"],
-        "start": 16,
-    }
-    red = {
-        "kennel": ["80", "81", "82", "83"],
-        "start": 32,
-    }
-    yellow = {
-        "kennel": ["88", "89", "90", "91"],
-        "start": 48,
-    }
+class KennelNumbers(list[int], Enum):
+    blue = [64, 65, 66, 67]
+    green = [72, 73, 74, 75]
+    red = [80, 81, 82, 83]
+    yellow = [88, 89, 90, 91]
+
+
+class StartNumbers(int, Enum):
+    blue = 0
+    green = 16
+    red = 32
+    yellow = 48
 
 
 class Dog(Game):
-
     def __init__(self) -> None:
         """ Game initialization (set_state call not necessary, we expect 4 players) """
         random.shuffle(GameState.LIST_CARD)
@@ -124,25 +117,25 @@ class Dog(Game):
                     name="Tick",
                     colour="blue",
                     list_card=GameState.LIST_CARD[:6],
-                    list_marble=[Marble(pos="64"), Marble(pos="65"), Marble(pos="66"), Marble(pos="67")],
+                    list_marble=[Marble(pos=64), Marble(pos=65), Marble(pos=66), Marble(pos=67)],
                 ),
                 PlayerState(
                     name="Trick",
                     colour="green",
                     list_card=GameState.LIST_CARD[6:12],
-                    list_marble=[Marble(pos="72"), Marble(pos="73"), Marble(pos="74"), Marble(pos="75")],
+                    list_marble=[Marble(pos=72), Marble(pos=73), Marble(pos=74), Marble(pos=75)],
                 ),
                 PlayerState(
                     name="Track",
                     colour="red",
                     list_card=GameState.LIST_CARD[12:18],
-                    list_marble=[Marble(pos="80"), Marble(pos="81"), Marble(pos="82"), Marble(pos="83")],
+                    list_marble=[Marble(pos=80), Marble(pos=81), Marble(pos=82), Marble(pos=83)],
                 ),
                 PlayerState(
                     name="Donald",
                     colour="yellow",
                     list_card=GameState.LIST_CARD[18:24],
-                    list_marble=[Marble(pos="88"), Marble(pos="89"), Marble(pos="90"), Marble(pos="91")],
+                    list_marble=[Marble(pos=88), Marble(pos=89), Marble(pos=90), Marble(pos=91)],
                 ),
             ],
             list_card_draw=GameState.LIST_CARD[24:],
@@ -174,9 +167,10 @@ class Dog(Game):
             pass  # TODO: implement for other tests
 
     def _get_marbles_in_kennel_and_in_play(self, player: PlayerState) -> tuple[list[Marble], list[Marble]]:
+        kennel_positions = KennelNumbers[player.colour]["kennel"]
         marbles_in_play, marbles_in_kennel = [], []
         for marble in player.list_marble:
-            if not marble.in_kennel:
+            if marble.pos not in kennel_positions:
                 marbles_in_play.append(marble)
             else:
                 marbles_in_kennel.append(marble)
@@ -184,7 +178,7 @@ class Dog(Game):
 
     def _if_all_marbles_in_kennel(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
         """Lists all actions that are possible if all marbles of a player are in the kennel."""
-        kennels_and_start = KennelAndStartNumbers[player.colour]
+        start_position = StartNumbers[player.colour]["start"]
         card_ranks = [card.rank for card in player.list_card]
         if not any(item in card_ranks for item in ["JKR", "A", "K"]):
             return []
@@ -194,7 +188,7 @@ class Dog(Game):
                 Action(
                     card=card,
                     pos_from=min(marble_in_kennel_positions),
-                    pos_to=kennels_and_start["start"],
+                    pos_to=start_position,
                 )
                 for card in player.list_card
                 if card.rank in ["JKR", "A", "K"]
