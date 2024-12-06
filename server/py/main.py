@@ -276,6 +276,7 @@ async def dog_simulation_ws(websocket: WebSocket):
             action = None
             if len(list_action) > 0:
                 action = player.select_action(state, list_action)
+                # action = player.select_action(state, list_action)
 
             dict_state = state.model_dump()
             dict_state['idx_player_you'] = idx_player_you
@@ -306,9 +307,34 @@ async def dog_singleplayer(request: Request):
 async def dog_singleplayer_ws(websocket: WebSocket):
     await websocket.accept()
 
-    try:
+    idx_player_you = 0
 
-        pass
+    try:
+        game = dog.Dog()
+        player = dog.RandomPlayer()
+
+        while True:
+            state = game.get_state()
+            if state.phase == dog.GamePhase.FINISHED:
+                break
+            
+            # New player's turn
+            if state.idx_player_activate == idx_player_you:
+                state = game.get_player_view(idx_player_you)
+                list_action = game.get_list_action()
+                dict_state = state.model_dump()
+                dict_state['idx_player_you'] = idx_player_you
+                dict_state['list_action'] = [action.model_dump() for action in list_action]
+                data = {'type': 'update', 'state': dict_state}
+                await websocket.send_json(data)
+
+                # handle the input given from player
+                if len(list_action) > 0:
+                    data = await websocket.receive_json()
+                    if data['type'] == 'action':
+                        action = dog.Action.model_validate(data['action'])
+                        game.apply_action(action)
+                        print(action)
 
     except WebSocketDisconnect:
         print('DISCONNECTED')
