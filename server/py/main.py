@@ -8,6 +8,7 @@ import asyncio
 
 import server.py.hangman as hangman
 import server.py.battleship as battleship
+import server.py.dog as dog
 
 import random
 
@@ -263,10 +264,34 @@ async def dog_simulation_ws(websocket: WebSocket):
     idx_player_you = 0 # identify player (0-3 --> player 1)
 
     try:
-        game = dog.DOG() # game instance for dog
-        player = dog.RandomPlacer # player instance for dog
+        game = dog.Dog() # game instance for dog
+        player = dog.RandomPlayer # player instance for dog
 
-        pass
+        while True:
+            # checking game state, possible actions --> updates client
+            state = game.get_state()
+            list_action = game.get_list_action()
+
+            # Check for valid actions
+            action = None
+            if len(list_action) > 0:
+                action = player.select_action(state, list_action)
+
+            dict_state = state.model_dump()
+            dict_state['idx_player_you'] = idx_player_you
+            dict_state['list_action'] = [action.model_dump() for action in list_action]
+            dict_state['selected_action'] = None if action is None else action.model_dump()
+            data = {'type': 'update', 'state': dict_state}
+            await websocket.send_json(data)
+
+            # Check for Game End
+            if state.phase == dog.GamePhase.FINISHED:
+                break
+
+            data = await websocket.receive_json()
+            if data['type'] == 'action':
+                action = dog.Action.model_validate(data['action'])
+                game.apply_action(action)
 
     except WebSocketDisconnect:
         print('DISCONNECTED')
