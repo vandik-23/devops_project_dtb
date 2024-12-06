@@ -260,7 +260,11 @@ async def dog_simulation(request: Request):
 async def dog_simulation_ws(websocket: WebSocket):
     await websocket.accept()
 
+    idx_player_you = 0 # identify player (0-3 --> player 1)
+
     try:
+        game = dog.DOG() # game instance for dog
+        player = dog.RandomPlacer # player instance for dog
 
         pass
 
