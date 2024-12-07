@@ -242,47 +242,47 @@ class Dog(Game):
 
 
 
-def apply_action(self, action: Optional[Action]) -> None:
-    """Apply the given action to the game or handle round progression if action is None."""
-    player = self.state.list_player[self.state.idx_player_active]
+    def apply_action(self, action: Optional[Action]) -> None:
+        """Apply the given action to the game or handle round progression if action is None."""
+        player = self.state.list_player[self.state.idx_player_active]
 
-    # Wenn keine Aktion möglich ist
-    if action is None:
-        # Schalte den aktiven Spieler weiter
-        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
-        # Prüfen, ob die Runde beendet ist
-        if self.state.idx_player_active == self.state.idx_player_started:
-            # Starte eine neue Runde
-            self.state.cnt_round += 1
-            # Verteile Karten für die neue Runde
-            num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
-            self.distribute_cards(num_cards)
-        return
+        # Wenn keine Aktion möglich ist
+        if action is None:
+            # Schalte den aktiven Spieler weiter
+            self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+            # Prüfen, ob die Runde beendet ist
+            if self.state.idx_player_active == self.state.idx_player_started:
+                # Starte eine neue Runde
+                self.state.cnt_round += 1
+                # Verteile Karten für die neue Runde
+                num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
+                self.distribute_cards(num_cards)
+            return
 
-    # Finde die aktuelle Position und das Ziel
-    current_position = action.pos_from
-    destination = action.pos_to
+        # Finde die aktuelle Position und das Ziel
+        current_position = action.pos_from
+        destination = action.pos_to
 
-    # Finde die Murmel an der aktuellen Position
-    marble_idx = self._get_marble_idx_from_position(player, current_position)
-    if marble_idx < 0:
-        raise ValueError("You don't have a marble at your specified position.")
+        # Finde die Murmel an der aktuellen Position
+        marble_idx = self._get_marble_idx_from_position(player, current_position)
+        if marble_idx < 0:
+            raise ValueError("You don't have a marble at your specified position.")
 
-    # Bewege die Murmel
-    player.list_marble[marble_idx].pos = destination
-    if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
-        player.list_marble[marble_idx].is_save = True
+        # Bewege die Murmel
+        player.list_marble[marble_idx].pos = destination
+        if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
+            player.list_marble[marble_idx].is_save = True
 
-    # Entferne die gespielte Karte
-    card_idx = self._get_card_idx_in_hand(player, action)
-    if card_idx < 0:
-        raise ValueError("You don't have this card in hand.")
-    player.list_card.pop(card_idx)
+        # Entferne die gespielte Karte
+        card_idx = self._get_card_idx_in_hand(player, action)
+        if card_idx < 0:
+            raise ValueError("You don't have this card in hand.")
+        player.list_card.pop(card_idx)
 
-    # Zusätzliche Logik: Prüfe, ob eine Murmel nach Hause geschickt werden kann
-    self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
+        # Zusätzliche Logik: Prüfe, ob eine Murmel nach Hause geschickt werden kann
+        self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
 
-    return
+        return 
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
@@ -312,6 +312,7 @@ def apply_action(self, action: Optional[Action]) -> None:
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
         pass
+
 
 
 class RandomPlayer(Player):
