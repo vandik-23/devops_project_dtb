@@ -1,4 +1,7 @@
-# runcmd: cd ../.. & venv\Scripts\python server/py/dog_template.py
+from server.py.game import Game, Player
+from typing import List, Optional, ClassVar
+from pydantic import BaseModel
+from enum import Enum
 import random
 from enum import Enum
 from typing import Any, ClassVar, List, Literal, Optional
@@ -14,9 +17,8 @@ class Card(BaseModel):
 
 
 class Marble(BaseModel):
-    pos: str  # position on board (0 to 95)
-    is_save: bool = False  # true if marble was moved out of kennel and was not yet moved
-    in_kennel: bool = True  # true if marble is in kennel
+    pos: int       # position on board (0 to 95)
+    is_save: bool  # true if marble was moved out of kennel and was not yet moved
 
 
 class PlayerState(BaseModel):
