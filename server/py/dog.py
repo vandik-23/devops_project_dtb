@@ -101,6 +101,23 @@ class StartNumbers(int, Enum):
     yellow = 48
 
 
+MOVES = {
+    "2": [2],
+    "3": [3],
+    "4": [4, -4],
+    "5": [5],
+    "6": [6],
+    "7": [1, 2, 3, 4, 5, 6, 7],
+    "8": [8],
+    "9": [9],
+    "10": [10],
+    "J": [-1],
+    "Q": [12],
+    "K": [13],
+    "A": [1, 11],
+    "JKR": [-1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+}
+
 class Dog(Game):
     def __init__(self) -> None:
         """ Game initialization (set_state call not necessary, we expect 4 players) """
@@ -164,7 +181,27 @@ class Dog(Game):
         if len(marbles_in_kennel) == 4:
             return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
         else:
-            pass  # TODO: implement for other tests
+            actions = []
+            for marble in marbles_in_play:
+                for card in player.list_card:
+                    for move in MOVES[card.rank]:
+
+                        current_position = marble.pos
+                        destination = (current_position + move) % 64
+                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                            continue # action not possible
+                        actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
+            return actions
+
+    def _check_if_save_marble_between_current_and_destination(self, current_position: int, destination: int) -> bool:
+        for player in self.state.list_player:
+            for marble in player.list_marble:
+                if current_position < destination:
+                    if marble.pos > current_position and marble.pos <= destination and marble.is_save:
+                        return True
+                else: # if move is over start (0) position
+                    if marble.pos < current_position and marble.pos <= destination and marble.is_save:
+                        return True
 
     def _get_marbles_in_kennel_and_in_play(self, player: PlayerState) -> tuple[list[Marble], list[Marble]]:
         kennel_positions = KennelNumbers[player.colour]
