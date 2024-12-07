@@ -194,22 +194,17 @@ class Dog(Game):
                 if card.rank in ["JKR", "A", "K"]
             ]
 
-    def apply_action(self, action: Action) -> None:
-        """ Apply the given action to the game """
-        player = self.state.list_player[self.state.idx_player_active]
-        current_position = action.pos_from
-        destination = action.pos_to
-        idx = self._get_marble_idx_from_position(player, current_position)
-        if idx < 0:
-            raise ValueError("You don't have a marble at your specified position.")
-        player.list_marble[idx].pos = destination
-        if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
-            player.list_marble[idx].is_save = True
-        idx = self._get_card_idx_in_hand(player, action)
-        if idx < 0:
-            raise ValueError("You don't have a this card in Hand.")
-        player.list_card.pop(idx)
-        return None
+
+    def calculate_num_cards(self, cnt_round: int) -> int:
+        """Calculate the number of cards to deal based on the round number."""
+        if cnt_round <= 5:
+            return max(6 - (cnt_round - 1), 1)  # Runden 1-5: Kartenanzahl reduziert sich
+        else:
+            return 6  # Ab Runde 6 immer 6 Karten
+
+
+
+
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
