@@ -21,3 +21,8 @@ EXPOSE 8080
 
 # Use uvicorn to start FastAPI from "server/py/main.py"
 CMD ["uvicorn", "server.py.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+# Navigate into project folder: cd devops_project_dtb
+# Build Docker Image: docker build -t devops_server_image .
+# check in docker desktop, file size ca. 890 MB
+# Run Docker Container: docker run -d --name devops_server_container -p 8000:8080 devops_server_image
