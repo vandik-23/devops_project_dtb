@@ -366,8 +366,35 @@ async def dog_random_player_ws(websocket: WebSocket):
     await websocket.accept()
 
     try:
+        game = dog.Dog()
+        players = [dog.RandomPlayer() for _ in range(4)] # 4 random players
 
-        pass
+        while True:
+            #Get current game state
+            state = game.get_state()
+            list_action = game.get_list_action()
+
+            # Check for valid actions
+            action = None
+            if len(list_action) > 0:
+                # Current AI player selects an action
+                current_player = players[state.idx_player_active]
+                action = current_player.select_action(state, list_action)
+
+            # Apply selected action to the game
+            if action is not None:
+                game.apply_action(action)
+
+            # Prepare state update for the client
+            dict_state = state.model_dump()
+            dict_state['list_action'] = [action.model_dump() for action in list_action]
+            dict_state['selected_action'] = None if action is None else action.model_dump()
+            await websocket.send_json({'type': 'update', 'state': dict_state})
+
+            # Check for Game End
+            if state.phase == dog.GamePhase.FINISHED:
+                await websocket.send_json({'type': 'update', 'state': dict_state})
+                break
 
     except WebSocketDisconnect:
         print('DISCONNECTED')
