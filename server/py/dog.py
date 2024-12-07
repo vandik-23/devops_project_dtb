@@ -240,6 +240,38 @@ class Dog(Game):
         self.distribute_cards(num_cards)
 
 
+    def apply_action(self, action: Optional[Action]) -> None:
+            """Apply the given action to the game or handle round progression if action is None."""
+            if action is None:
+                # Schalte den aktiven Spieler weiter
+                self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+                # Prüfen, ob die Runde beendet ist
+                if self.state.idx_player_active == self.state.idx_player_started:
+                    # Starte eine neue Runde
+                    self.state.cnt_round += 1
+                    # Verteile Karten für die neue Runde
+                    num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
+                    self.distribute_cards(num_cards)
+                return
+            # Standard-Logik für das Ausführen einer Aktion
+            player = self.state.list_player[self.state.idx_player_active]
+            current_position = action.pos_from
+            destination = action.pos_to
+            # Finde die Murmel an der aktuellen Position
+            idx = self._get_marble_idx_from_position(player, current_position)
+            if idx < 0:
+                raise ValueError("You don't have a marble at your specified position.")
+            
+            # Bewege die Murmel
+            player.list_marble[idx].pos = destination
+            if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
+                player.list_marble[idx].is_save = True
+            # Entferne die gespielte Karte
+            idx = self._get_card_idx_in_hand(player, action)
+            if idx < 0:
+                raise ValueError("You don't have this card in hand.")
+            player.list_card.pop(idx)
+
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
