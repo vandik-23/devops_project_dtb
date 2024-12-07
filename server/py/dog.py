@@ -244,6 +244,18 @@ class Dog(Game):
         """ Apply the given action to the game """
         player = self.state.list_player[self.state.idx_player_active]
 
+        # card exchange at the beginning of the round
+        if self.state.cnt_round == 0:
+            if not self.state.bool_card_exchanged:
+
+                # Find partner for exchange
+                idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player
+                partner = self.state.list_player[idx_partner]
+
+                # Exchange card
+                player.list_card.remove(action.card)
+                partner.list_card.append(action.card)
+
         if action is None:  # fold cards if no action is possible
             player.list_card = []
             return None
