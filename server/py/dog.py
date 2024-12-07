@@ -240,50 +240,74 @@ class Dog(Game):
         self.distribute_cards(num_cards)
 
 
-    def apply_action(self, action: Optional[Action]) -> None:
-            """Apply the given action to the game or handle round progression if action is None."""
-            if action is None:
-                # Schalte den aktiven Spieler weiter
-                self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
-                # Prüfen, ob die Runde beendet ist
-                if self.state.idx_player_active == self.state.idx_player_started:
-                    # Starte eine neue Runde
-                    self.state.cnt_round += 1
-                    # Verteile Karten für die neue Runde
-                    num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
-                    self.distribute_cards(num_cards)
-                return
-            # Standard-Logik für das Ausführen einer Aktion
-            player = self.state.list_player[self.state.idx_player_active]
-            current_position = action.pos_from
-            destination = action.pos_to
-            # Finde die Murmel an der aktuellen Position
-            idx = self._get_marble_idx_from_position(player, current_position)
-            if idx < 0:
-                raise ValueError("You don't have a marble at your specified position.")
-            
-            # Bewege die Murmel
-            player.list_marble[idx].pos = destination
-            if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
-                player.list_marble[idx].is_save = True
-            # Entferne die gespielte Karte
-            idx = self._get_card_idx_in_hand(player, action)
-            if idx < 0:
-                raise ValueError("You don't have this card in hand.")
-            player.list_card.pop(idx)
 
+
+def apply_action(self, action: Optional[Action]) -> None:
+    """Apply the given action to the game or handle round progression if action is None."""
+    player = self.state.list_player[self.state.idx_player_active]
+
+    # Wenn keine Aktion möglich ist
+    if action is None:
+        # Schalte den aktiven Spieler weiter
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+        # Prüfen, ob die Runde beendet ist
+        if self.state.idx_player_active == self.state.idx_player_started:
+            # Starte eine neue Runde
+            self.state.cnt_round += 1
+            # Verteile Karten für die neue Runde
+            num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
+            self.distribute_cards(num_cards)
+        return
+
+    # Finde die aktuelle Position und das Ziel
+    current_position = action.pos_from
+    destination = action.pos_to
+
+    # Finde die Murmel an der aktuellen Position
+    marble_idx = self._get_marble_idx_from_position(player, current_position)
+    if marble_idx < 0:
+        raise ValueError("You don't have a marble at your specified position.")
+
+    # Bewege die Murmel
+    player.list_marble[marble_idx].pos = destination
+    if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
+        player.list_marble[marble_idx].is_save = True
+
+    # Entferne die gespielte Karte
+    card_idx = self._get_card_idx_in_hand(player, action)
+    if card_idx < 0:
+        raise ValueError("You don't have this card in hand.")
+    player.list_card.pop(card_idx)
+
+    # Zusätzliche Logik: Prüfe, ob eine Murmel nach Hause geschickt werden kann
+    self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
+
+    return
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
             if marble.pos == position:
                 return i
         return -1
-    
+
     def _get_card_idx_in_hand(self, player: PlayerState, action: Action) -> int:
         for i, card in enumerate(player.list_card):
             if card.suit == action.card.suit and card.rank == action.card.rank:
                 return i
         return -1
+
+    def _send_marble_home_if_possible(self, action: Action, marble_idx: int, current_position: int, destination: int) -> None:
+        for i, player in enumerate(self.state.list_player):
+            kennel_positions = KennelNumbers[player.colour]
+            for j, marble in enumerate(player.list_marble):
+                if i == self.state.idx_player_active and j == marble_idx:
+                        continue # skip the marble that was moved
+                if action.card.rank == 7:
+                    if marble.pos > current_position and marble.pos < destination:
+                        marble.pos = kennel_positions[0] # TODO: find smarter way to allocate marbles to kennel
+
+                if marble.pos == destination:
+                    marble.pos = kennel_positions[0]
 
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
