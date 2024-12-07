@@ -225,9 +225,21 @@ class Dog(Game):
         for player in self.state.list_player:
             player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
 
+    def start_game_state_at_round_2(self) -> None:
+        """Start the game in round 2, ensuring correct card distribution."""
+        self.reset()  # Reset the game state
+        # Set the round number and update players
+        self.state.cnt_round = 2
+        self.state.idx_player_started = 0
+        self.state.idx_player_active = 0
+        # Clear all player hands (simulate round progression)
+        for player in self.state.list_player:
+            player.list_card = []
+        # Verteile Karten für Runde 2
+        num_cards = self.calculate_num_cards(self.state.cnt_round)  # Dynamische Berechnung
+        self.distribute_cards(num_cards)
 
 
-            
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
