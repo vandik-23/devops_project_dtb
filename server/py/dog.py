@@ -100,6 +100,12 @@ class StartNumbers(int, Enum):
     red = 32
     yellow = 48
 
+class FinishNumbers(list[int], Enum):
+    blue = [68,69,70,71]
+    green = [76,77,78,79]
+    red = [84,85,86,87]
+    yellow = [92,93,94,95]
+
 
 class Dog(Game):
     def __init__(self) -> None:
@@ -161,8 +167,11 @@ class Dog(Game):
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
+        card_ranks = [card.rank for card in player.list_card]
         if len(marbles_in_kennel) == 4:
             return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
+        elif any(item in card_ranks for item in [ "J"]):
+            return self._jake_card_swap_marbles(player, marbles_to_swap)
         else:
             pass  # TODO: implement for other tests
 
@@ -222,6 +231,34 @@ class Dog(Game):
             if card.suit == action.card.suit and card.rank == action.card.rank:
                 return i
         return -1
+    
+    def _jake_card_swap_marbles(self, player: PlayerState) -> List[Action]:
+        """Jake card rules: Player must select to swap marbles with another player's marble.
+        The swap must occur unless no valid marbles are available for swapping."""
+        marbles_to_swap = []
+        own_marbles = self._get_marbles_in_kennel_and_in_play(player)
+        opponent_marbles = []
+        
+        # Collect all opponent marbles that are valid for swapping
+        for opponent in self.state.list_player:
+            if opponent.colour != player.colour:
+                opponent_marbles.extend(marble for marble in self._get_marbles_in_kennel_and_in_play(opponent)
+                if marble.pos not in StartNumbers.values()  # Cannot swap marbles in start
+                and marble.pos not in FinishNumbers[opponent.colour])  # Cannot swap marbles in finish
+        
+        # If no valid opponent marbles are found and only own marbles are in play, return no action
+        if not opponent_marbles and own_marbles:
+            return []
+        
+        # Generate all possible swap actions
+        for own_marble in own_marbles:
+            for opponent_marble in opponent_marbles:
+                marbles_to_swap.append(Action(
+                    card=next((card for card in player.list_card if card.rank == "J"), None),
+                    pos_from=own_marble.pos,
+                    pos_to=opponent_marble.pos
+            ))
+                return marbles_to_swap
 
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
