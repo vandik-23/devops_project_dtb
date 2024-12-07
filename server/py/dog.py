@@ -202,7 +202,23 @@ class Dog(Game):
         else:
             return 6  # Ab Runde 6 immer 6 Karten
 
-
+    def reset(self) -> None:
+        """Reset the game for a new round, preserving marble positions."""
+        # Shuffle cards
+        random.shuffle(GameState.LIST_CARD)
+        # Reset Kartenstapel
+        self.state.list_card_draw = GameState.LIST_CARD[:]
+        self.state.list_card_discard = []
+        self.state.card_active = None
+        # Update game state
+        self.state.phase = GamePhase.RUNNING
+        self.state.cnt_round += 1  # Runde hochzählen
+        self.state.bool_card_exchanged = False
+        self.state.idx_player_started = (self.state.idx_player_started + 1) % self.state.cnt_player
+        self.state.idx_player_active = self.state.idx_player_started
+        # Verteile Karten für die neue Runde
+        num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
+        self.distribute_cards(num_cards)
 
 
 
