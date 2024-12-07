@@ -256,6 +256,13 @@ class Dog(Game):
                 player.list_card.remove(action.card)
                 partner.list_card.append(action.card)
 
+                # Move to the next player
+                self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+                if self.state.idx_player_active == self.state.idx_player_started:
+                    self.state.bool_card_exchanged = True
+                return
+
         if action is None:  # fold cards if no action is possible
             player.list_card = []
             return None
