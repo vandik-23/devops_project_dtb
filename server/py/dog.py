@@ -180,6 +180,11 @@ class Dog(Game):
     def get_list_action(self) -> List[Action]:
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
+
+        # Card exchange in beginning of the round
+        if self.state.cnt_round == 0 and not self.state.bool_card_exchanged:
+            return [Action(card=card) for card in player.list_card]
+
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
         if len(marbles_in_kennel) == 4:
             return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
