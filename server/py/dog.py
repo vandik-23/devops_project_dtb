@@ -220,7 +220,14 @@ class Dog(Game):
         num_cards = self.calculate_num_cards(self.state.cnt_round)  # Aufruf der Instanzmethode
         self.distribute_cards(num_cards)
 
+    def distribute_cards(self, num_cards: int) -> None:
+        """Distribute a specific number of cards to each player."""
+        for player in self.state.list_player:
+            player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
 
+
+
+            
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
