@@ -180,6 +180,12 @@ class Dog(Game):
     def get_list_action(self) -> List[Action]:
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
+
+        # Checks if card exchange is completed
+        if not self.state.bool_card_exchanged:
+            return self._generate_card_exchange_actions(player) # calls helper method for the exchange
+        
+
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
         if len(marbles_in_kennel) == 4:
             return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
@@ -195,6 +201,11 @@ class Dog(Game):
                             continue # action not possible
                         actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
             return actions
+
+    def _generate_card_exchange_actions(self, player: PlayerState) -> List[Action]:
+        """returns list of possible Actions for the card exchange"""
+        unique_cards = {card.rank + card.suit: card for card in player.list_card}.values()
+        return [Action(card=card) for card in unique_cards]
 
     def _check_if_save_marble_between_current_and_destination(self, current_position: int, destination: int) -> bool:
         for player in self.state.list_player:
@@ -238,6 +249,11 @@ class Dog(Game):
         """ Apply the given action to the game """
         player = self.state.list_player[self.state.idx_player_active]
 
+        # if cards not exchanged, call helper method for exchange
+        if not self.state.bool_card_exchanged:
+            self._exchange_cards(player, action)
+            return
+
         if action is None:  # fold cards if no action is possible
             player.list_card = []
             return None
@@ -257,6 +273,20 @@ class Dog(Game):
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
 
         return None
+
+    def _exchange_cards(self, player: PlayerState, action: Action) -> None:
+        idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
+        partner = self.state.list_player[idx_partner]
+
+        # Exchange the card
+        player.list_card.remove(action.card)
+        partner.list_card.append(action.card)
+
+        # Move to next player
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+        if self.state.idx_player_active == self.state.idx_player_started:
+            self.state.bool_card_exchanged = True
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
