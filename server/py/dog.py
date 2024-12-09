@@ -181,10 +181,10 @@ class Dog(Game):
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
 
-        # Card exchange at the beginning of the round
-        if self.state.cnt_round == 0 and not self.state.bool_card_exchanged:
-            unique_cards = {card.rank + card.suit: card for card in player.list_card}.values()
-            return [Action(card=card) for card in unique_cards]
+        # Checks if card exchange is completed
+        if not self.state.bool_card_exchanged:
+            return self._generate_card_exchange_actions(player) # calls helper method for the exchange
+        
 
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
         if len(marbles_in_kennel) == 4:
