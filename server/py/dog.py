@@ -216,7 +216,7 @@ class Dog(Game):
         self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
 
         if self.state.idx_player_active == self.state.idx_player_started:
-            # Increment the round counter
+            
             self.state.cnt_round += 1
 
             num_cards = self._calculate_num_cards(self.state.cnt_round)
