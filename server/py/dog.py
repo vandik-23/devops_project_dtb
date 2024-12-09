@@ -234,29 +234,64 @@ class Dog(Game):
                 if card.rank in ["JKR", "A", "K"]
             ]
 
-    def apply_action(self, action: Action) -> None:
-        """ Apply the given action to the game """
+
+    def _calculate_num_cards(self, cnt_round: int) -> int:
+        """Calculate the number of cards to deal based on the round number."""
+        if cnt_round <= 5:
+            return max(6 - (cnt_round - 1), 1)  # Runden 1-5: Kartenanzahl reduziert sich
+        else:
+            return 6  # Ab Runde 6 immer 6 Karten
+
+
+    def _distribute_cards(self, num_cards: int) -> None:
+        """Distribute a specific number of cards to each player."""
+        for player in self.state.list_player:
+            player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
+
+    def _no_action_possible(self) -> None:
+        """
+        Handle the case when no action is possible.
+        This progresses the game state to the next active player or the next round.
+        """
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+        if self.state.idx_player_active == self.state.idx_player_started:
+            
+            self.state.cnt_round += 1
+
+            num_cards = self._calculate_num_cards(self.state.cnt_round)
+            self._distribute_cards(num_cards)
+
+    def apply_action(self, action: Optional[Action]) -> None:
+        """Apply the given action to the game or handle round progression if action is None."""
+        
+        if action is None:
+            return self._no_action_possible()
+
         player = self.state.list_player[self.state.idx_player_active]
-
-        if action is None:  # fold cards if no action is possible
-            player.list_card = []
-            return None
-
         current_position = action.pos_from
         destination = action.pos_to
+
+        
         marble_idx = self._get_marble_idx_from_position(player, current_position)
         if marble_idx < 0:
             raise ValueError("You don't have a marble at your specified position.")
+
+        
         player.list_marble[marble_idx].pos = destination
         if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
             player.list_marble[marble_idx].is_save = True
+
+        
         card_idx = self._get_card_idx_in_hand(player, action)
         if card_idx < 0:
-            raise ValueError("You don't have a this card in Hand.")
+            raise ValueError("You don't have this card in hand.")
         player.list_card.pop(card_idx)
+
+        
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
 
-        return None
+        return 
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
@@ -286,6 +321,7 @@ class Dog(Game):
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
         pass
+
 
 
 class RandomPlayer(Player):
