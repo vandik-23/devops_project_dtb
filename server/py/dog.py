@@ -12,6 +12,9 @@ class Card(BaseModel):
     suit: str  # card suit (color)
     rank: str  # card rank
 
+    def __lt__(self, card) -> bool:
+        return self.suit < card.suit or self.rank < card.rank
+
 
 class Marble(BaseModel):
     pos: int # position on board (0 to 95)
@@ -167,6 +170,10 @@ class Dog(Game):
         
         if any(card.rank == "JKR" for card in player.list_card):
             actions.extend(self._chose_card_with_Joker(player, marbles_in_kennel))
+
+        else: 
+            pass #to be implemented
+
         return actions
 
 
@@ -203,20 +210,9 @@ class Dog(Game):
         Generate possible actions when a player has a JOKER card in hand.
         Includes both swap actions and movement actions.
         """
-        start_position = StartNumbers[player.colour]
-        marble_in_kennel_positions = [marble.pos for marble in marbles_in_kennel]
         actions = []
-        # Generiere Bewegungsaktion
-        if marble_in_kennel_positions:
-            actions.append(
-                Action(
-                    card=Card(suit="", rank="JKR"),
-                    pos_from=min(marble_in_kennel_positions),
-                    pos_to=start_position,
-                )
-            )
         # Generiere Tauschaktionen
-        swap_cards = [Card(suit="", rank=rank) for rank in ["A", "K"]]
+        swap_cards = [Card(suit="♥", rank=rank) for rank in ["A", "K"]]
         for swap_card in swap_cards:
             actions.append(
                 Action(
