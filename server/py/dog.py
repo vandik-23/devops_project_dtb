@@ -202,6 +202,11 @@ class Dog(Game):
                         actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
             return actions
 
+    def _generate_card_exchange_actions(self, player: PlayerState) -> List[Action]:
+        """returns list of possible Actions for the card exchange"""
+        unique_cards = {card.rank + card.suit: card for card in player.list_card}.values()
+        return [Action(card=card) for card in unique_cards]
+
     def _check_if_save_marble_between_current_and_destination(self, current_position: int, destination: int) -> bool:
         for player in self.state.list_player:
             for marble in player.list_marble:
