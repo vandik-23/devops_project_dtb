@@ -161,20 +161,12 @@ class Dog(Game):
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
-        
-        if len(marbles_in_kennel) == 4:
-            
-            if any(card.rank == "JKR" for card in player.list_card):
-                return self._chose_card_with_Joker(player, marbles_in_kennel)
-            
-            return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
-       
         actions = []
-      
+        if len(marbles_in_kennel) == 4:
+            actions.extend(self._if_all_marbles_in_kennel(player, marbles_in_kennel))
+        
         if any(card.rank == "JKR" for card in player.list_card):
-            joker_action = self._chose_card_with_Joker(player, marbles_in_kennel)
-            actions.extend(joker_action)
-
+            actions.extend(self._chose_card_with_Joker(player, marbles_in_kennel))
         return actions
 
 
@@ -192,7 +184,7 @@ class Dog(Game):
         """Lists all actions that are possible if all marbles of a player are in the kennel."""
         start_position = StartNumbers[player.colour]
         card_ranks = [card.rank for card in player.list_card]
-        if not any(item in card_ranks for item in ["JKR", "A", "K"]):
+        if not any(item in card_ranks for item in ["JKR","A", "K"]):
             return []
         else:
             marble_in_kennel_positions = [marble.pos for marble in marbles_in_kennel]
@@ -203,9 +195,38 @@ class Dog(Game):
                     pos_to=start_position,
                 )
                 for card in player.list_card
-                if card.rank in ["JKR", "A", "K"]
+                if card.rank in ["JKR","A", "K"]
             ]
 
+    def _chose_card_with_Joker(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
+        """
+        Generate possible actions when a player has a JOKER card in hand.
+        Includes both swap actions and movement actions.
+        """
+        start_position = StartNumbers[player.colour]
+        marble_in_kennel_positions = [marble.pos for marble in marbles_in_kennel]
+        actions = []
+        # Generiere Bewegungsaktion
+        if marble_in_kennel_positions:
+            actions.append(
+                Action(
+                    card=Card(suit="", rank="JKR"),
+                    pos_from=min(marble_in_kennel_positions),
+                    pos_to=start_position,
+                )
+            )
+        # Generiere Tauschaktionen
+        swap_cards = [Card(suit="", rank=rank) for rank in ["A", "K"]]
+        for swap_card in swap_cards:
+            actions.append(
+                Action(
+                    card=Card(suit="", rank="JKR"),
+                    pos_from=-1,
+                    pos_to=-1,
+                    card_swap=swap_card,
+                )
+            )
+        return actions
 
     def _calculate_num_cards(self, cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
@@ -234,35 +255,8 @@ class Dog(Game):
             num_cards = self._calculate_num_cards(self.state.cnt_round)
             self._distribute_cards(num_cards)
 
-    def _chose_card_with_Joker(self, player: PlayerState, marbles_in_kennel: List[Marble]) -> list[Action]:
 
-        start_position = StartNumbers[player.colour]
-        marbles_in_kennel_position = [marble.pos for marble in marbles_in_kennel]
 
-        actions = []
-
-        if marbles_in_kennel_position:
-            actions.append(
-                Action(
-                    card=Card(suit="", rank="JKR"),
-                    pos_from=min(marbles_in_kennel_position),
-                    pos_to=start_position,
-                )
-            )
-
-        swap_cards = [Card(suit="", rank=rank) for rank in ["A", "K"]]
-
-        for swap_card in swap_cards:
-            actions.append(
-                Action(
-                    card=Card(suit="", rank="JKR"),
-                    pos_from=-1,  
-                    pos_to=-1,    
-                    card_swap=swap_card,
-                )
-            )
-
-        return actions
 
     def apply_action(self, action: Optional[Action]) -> None:
         """Apply the given action to the game or handle round progression if action is None."""
@@ -323,6 +317,8 @@ class Dog(Game):
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
         pass
+
+
 
 
 
