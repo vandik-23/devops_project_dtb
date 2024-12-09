@@ -274,6 +274,20 @@ class Dog(Game):
 
         return None
 
+    def _exchange_cards(self, player: PlayerState, action: Action) -> None:
+        idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
+        partner = self.state.list_player[idx_partner]
+
+        # Exchange the card
+        player.list_card.remove(action.card)
+        partner.list_card.append(action.card)
+
+        # Move to next player
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+        if self.state.idx_player_active == self.state.idx_player_started:
+            self.state.bool_card_exchanged = True
+
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
             if marble.pos == position:
