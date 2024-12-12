@@ -248,7 +248,7 @@ class Dog(Game):
                 if card.rank in ["JKR","A", "K"]
             ]
 
-    def _calculate_num_card(cnt_round: int) -> int:
+    def _calculate_num_card(self, cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
         if cnt_round <= 5:
             return max(6 - (cnt_round - 1), 1)  # Runden 1-5: Kartenanzahl reduziert sich
@@ -276,8 +276,6 @@ class Dog(Game):
             self._distribute_cards(num_cards)
 
 
-
-
     def apply_action(self, action: Action) -> None:
         """ Apply the given action to the game """
         player = self.state.list_player[self.state.idx_player_active]
@@ -288,22 +286,7 @@ class Dog(Game):
 
         if action is None:  # fold cards if no action is possible
             player.list_card = []
-            
-            self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
-
-            if self.state.idx_player_active == self.state.idx_player_started:
-                
-                self.state.cnt_round += 1
-
-                
-                if self.state.cnt_round <= 5:
-                    num_cards = max(6 - (self.state.cnt_round - 1), 1)
-                else:
-                    num_cards = 6
-
-                
-                for player in self.state.list_player:
-                    player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
+            self._no_action_possible()
             return
 
         current_position = action.pos_from
