@@ -15,6 +15,9 @@ class Card(BaseModel):
     suit: str  # card suit (color)
     rank: str  # card rank
 
+    def __lt__(self, card) -> bool:
+        return self.suit < card.suit or self.rank < card.rank
+
 
 class Marble(BaseModel):
     pos: int # position on board (0 to 95)
@@ -231,7 +234,7 @@ class Dog(Game):
         """Lists all actions that are possible if all marbles of a player are in the kennel."""
         start_position = StartNumbers[player.colour]
         card_ranks = [card.rank for card in player.list_card]
-        if not any(item in card_ranks for item in ["JKR", "A", "K"]):
+        if not any(item in card_ranks for item in ["JKR","A", "K"]):
             return []
         else:
             marble_in_kennel_positions = [marble.pos for marble in marbles_in_kennel]
@@ -242,21 +245,49 @@ class Dog(Game):
                     pos_to=start_position,
                 )
                 for card in player.list_card
-                if card.rank in ["JKR", "A", "K"]
+                if card.rank in ["JKR","A", "K"]
             ]
+
+    def _calculate_num_card(self, cnt_round: int) -> int:
+        """Calculate the number of cards to deal based on the round number."""
+        if cnt_round <= 5:
+            return max(6 - (cnt_round - 1), 1)  # Runden 1-5: Kartenanzahl reduziert sich
+        else:
+            return 6 
+
+
+    def _distribute_cards(self, num_cards: int) -> None:
+        """Distribute a specific number of cards to each player."""
+        for player in self.state.list_player:
+            player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
+
+    def _no_action_possible(self) -> None:
+        """
+        Handle the case when no action is possible.
+        This progresses the game state to the next active player or the next round.
+        """
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+        if self.state.idx_player_active == self.state.idx_player_started:
+            
+            self.state.cnt_round += 1
+
+            num_cards = self._calculate_num_card(self.state.cnt_round)
+            self._distribute_cards(num_cards)
+
 
     def apply_action(self, action: Action) -> None:
         """ Apply the given action to the game """
         player = self.state.list_player[self.state.idx_player_active]
 
-        # if cards not exchanged, call helper method for exchange
         if not self.state.bool_card_exchanged:
             self._exchange_cards(player, action)
             return
 
         if action is None:  # fold cards if no action is possible
             player.list_card = []
-            return None
+            self._no_action_possible()
+            return
 
         current_position = action.pos_from
         destination = action.pos_to
