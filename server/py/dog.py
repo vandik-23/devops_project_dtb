@@ -279,48 +279,48 @@ class Dog(Game):
 
 
     def apply_action(self, action: Action) -> None:
-            """ Apply the given action to the game """
-            player = self.state.list_player[self.state.idx_player_active]
+        """ Apply the given action to the game """
+        player = self.state.list_player[self.state.idx_player_active]
 
-            if not self.state.bool_card_exchanged:
-                self._exchange_cards(player, action)
-                return
+        if not self.state.bool_card_exchanged:
+            self._exchange_cards(player, action)
+            return
 
-            if action is None:  # fold cards if no action is possible
-                player.list_card = []
+        if action is None:  # fold cards if no action is possible
+            player.list_card = []
+            
+            self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+            if self.state.idx_player_active == self.state.idx_player_started:
                 
-                self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+                self.state.cnt_round += 1
 
-                if self.state.idx_player_active == self.state.idx_player_started:
-                    
-                    self.state.cnt_round += 1
+                
+                if self.state.cnt_round <= 5:
+                    num_cards = max(6 - (self.state.cnt_round - 1), 1)
+                else:
+                    num_cards = 6
 
-                    
-                    if self.state.cnt_round <= 5:
-                        num_cards = max(6 - (self.state.cnt_round - 1), 1)
-                    else:
-                        num_cards = 6
+                
+                for player in self.state.list_player:
+                    player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
+            return
 
-                    
-                    for player in self.state.list_player:
-                        player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
-                return
+        current_position = action.pos_from
+        destination = action.pos_to
+        marble_idx = self._get_marble_idx_from_position(player, current_position)
+        if marble_idx < 0:
+            raise ValueError("You don't have a marble at your specified position.")
+        player.list_marble[marble_idx].pos = destination
+        if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
+            player.list_marble[marble_idx].is_save = True
+        card_idx = self._get_card_idx_in_hand(player, action)
+        if card_idx < 0:
+            raise ValueError("You don't have a this card in Hand.")
+        player.list_card.pop(card_idx)
+        self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
 
-            current_position = action.pos_from
-            destination = action.pos_to
-            marble_idx = self._get_marble_idx_from_position(player, current_position)
-            if marble_idx < 0:
-                raise ValueError("You don't have a marble at your specified position.")
-            player.list_marble[marble_idx].pos = destination
-            if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
-                player.list_marble[marble_idx].is_save = True
-            card_idx = self._get_card_idx_in_hand(player, action)
-            if card_idx < 0:
-                raise ValueError("You don't have a this card in Hand.")
-            player.list_card.pop(card_idx)
-            self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
-
-            return None
+        return None
 
     def _exchange_cards(self, player: PlayerState, action: Action) -> None:
         idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
