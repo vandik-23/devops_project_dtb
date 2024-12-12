@@ -282,7 +282,6 @@ class Dog(Game):
             """ Apply the given action to the game """
             player = self.state.list_player[self.state.idx_player_active]
 
-            # if cards not exchanged, call helper method for exchange
             if not self.state.bool_card_exchanged:
                 self._exchange_cards(player, action)
                 return
