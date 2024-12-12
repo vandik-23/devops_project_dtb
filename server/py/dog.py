@@ -1,4 +1,7 @@
-# runcmd: cd ../.. & venv\Scripts\python server/py/dog_template.py
+from server.py.game import Game, Player
+from typing import List, Optional, ClassVar
+from pydantic import BaseModel
+from enum import Enum
 import random
 from enum import Enum
 from typing import ClassVar, List, Literal, Optional
@@ -104,6 +107,23 @@ class StartNumbers(int, Enum):
     yellow = 48
 
 
+MOVES = {
+    "2": [2],
+    "3": [3],
+    "4": [4, -4],
+    "5": [5],
+    "6": [6],
+    "7": [1, 2, 3, 4, 5, 6, 7],
+    "8": [8],
+    "9": [9],
+    "10": [10],
+    "J": [-1],
+    "Q": [12],
+    "K": [13],
+    "A": [1, 11],
+    "JKR": [-1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+}
+
 class Dog(Game):
     def __init__(self) -> None:
         """ Game initialization (set_state call not necessary, we expect 4 players) """
@@ -163,19 +183,42 @@ class Dog(Game):
     def get_list_action(self) -> List[Action]:
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
-        marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
-        actions = []
-        if len(marbles_in_kennel) == 4:
-            actions.extend(self._if_all_marbles_in_kennel(player, marbles_in_kennel))
+
+        # Checks if card exchange is completed
+        if not self.state.bool_card_exchanged:
+            return self._generate_card_exchange_actions(player) # calls helper method for the exchange
         
-        if any(card.rank == "JKR" for card in player.list_card):
-            actions.extend(self._chose_card_with_Joker(player, marbles_in_kennel))
 
-        else: 
-            pass #to be implemented
+        marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
+        if len(marbles_in_kennel) == 4:
+            return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
+        else:
+            actions = []
+            for marble in marbles_in_play:
+                for card in player.list_card:
+                    for move in MOVES[card.rank]:
 
-        return actions
+                        current_position = marble.pos
+                        destination = (current_position + move) % 64
+                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                            continue # action not possible
+                        actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
+            return actions
 
+    def _generate_card_exchange_actions(self, player: PlayerState) -> List[Action]:
+        """returns list of possible Actions for the card exchange"""
+        unique_cards = {card.rank + card.suit: card for card in player.list_card}.values()
+        return [Action(card=card) for card in unique_cards]
+
+    def _check_if_save_marble_between_current_and_destination(self, current_position: int, destination: int) -> bool:
+        for player in self.state.list_player:
+            for marble in player.list_marble:
+                if current_position < destination:
+                    if marble.pos > current_position and marble.pos <= destination and marble.is_save:
+                        return True
+                else: # if move is over start (0) position
+                    if marble.pos < current_position and marble.pos <= destination and marble.is_save:
+                        return True
 
     def _get_marbles_in_kennel_and_in_play(self, player: PlayerState) -> tuple[list[Marble], list[Marble]]:
         kennel_positions = KennelNumbers[player.colour]
@@ -205,31 +248,12 @@ class Dog(Game):
                 if card.rank in ["JKR","A", "K"]
             ]
 
-    def _chose_card_with_Joker(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
-        """
-        Generate possible actions when a player has a JOKER card in hand.
-        Includes both swap actions and movement actions.
-        """
-        actions = []
-        # Generiere Tauschaktionen
-        swap_cards = [Card(suit="♥", rank=rank) for rank in ["A", "K"]]
-        for swap_card in swap_cards:
-            actions.append(
-                Action(
-                    card=Card(suit="", rank="JKR"),
-                    pos_from=-1,
-                    pos_to=-1,
-                    card_swap=swap_card,
-                )
-            )
-        return actions
-
-    def _calculate_num_cards(self, cnt_round: int) -> int:
+    def _calculate_num_card(cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
         if cnt_round <= 5:
             return max(6 - (cnt_round - 1), 1)  # Runden 1-5: Kartenanzahl reduziert sich
         else:
-            return 6  # Ab Runde 6 immer 6 Karten
+            return 6 
 
 
     def _distribute_cards(self, num_cards: int) -> None:
@@ -248,42 +272,70 @@ class Dog(Game):
             
             self.state.cnt_round += 1
 
-            num_cards = self._calculate_num_cards(self.state.cnt_round)
+            num_cards = self._calculate_num_card(self.state.cnt_round)
             self._distribute_cards(num_cards)
 
 
 
 
-    def apply_action(self, action: Optional[Action]) -> None:
-        """Apply the given action to the game or handle round progression if action is None."""
-        
-        if action is None:
-            return self._no_action_possible()
+    def apply_action(self, action: Action) -> None:
+            """ Apply the given action to the game """
+            player = self.state.list_player[self.state.idx_player_active]
 
-        player = self.state.list_player[self.state.idx_player_active]
-        current_position = action.pos_from
-        destination = action.pos_to
+            # if cards not exchanged, call helper method for exchange
+            if not self.state.bool_card_exchanged:
+                self._exchange_cards(player, action)
+                return
 
-        
-        marble_idx = self._get_marble_idx_from_position(player, current_position)
-        if marble_idx < 0:
-            raise ValueError("You don't have a marble at your specified position.")
+            if action is None:  # fold cards if no action is possible
+                player.list_card = []
+                
+                self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
 
-        
-        player.list_marble[marble_idx].pos = destination
-        if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
-            player.list_marble[marble_idx].is_save = True
+                if self.state.idx_player_active == self.state.idx_player_started:
+                    
+                    self.state.cnt_round += 1
 
-        
-        card_idx = self._get_card_idx_in_hand(player, action)
-        if card_idx < 0:
-            raise ValueError("You don't have this card in hand.")
-        player.list_card.pop(card_idx)
+                    
+                    if self.state.cnt_round <= 5:
+                        num_cards = max(6 - (self.state.cnt_round - 1), 1)
+                    else:
+                        num_cards = 6
 
-        
-        self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
+                    
+                    for player in self.state.list_player:
+                        player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
+                return
 
-        return 
+            current_position = action.pos_from
+            destination = action.pos_to
+            marble_idx = self._get_marble_idx_from_position(player, current_position)
+            if marble_idx < 0:
+                raise ValueError("You don't have a marble at your specified position.")
+            player.list_marble[marble_idx].pos = destination
+            if destination == StartNumbers[player.colour] and current_position in KennelNumbers[player.colour]:
+                player.list_marble[marble_idx].is_save = True
+            card_idx = self._get_card_idx_in_hand(player, action)
+            if card_idx < 0:
+                raise ValueError("You don't have a this card in Hand.")
+            player.list_card.pop(card_idx)
+            self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
+
+            return None
+
+    def _exchange_cards(self, player: PlayerState, action: Action) -> None:
+        idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
+        partner = self.state.list_player[idx_partner]
+
+        # Exchange the card
+        player.list_card.remove(action.card)
+        partner.list_card.append(action.card)
+
+        # Move to next player
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+
+        if self.state.idx_player_active == self.state.idx_player_started:
+            self.state.bool_card_exchanged = True
 
     def _get_marble_idx_from_position(self, player: PlayerState, position: int) -> int:
         for i, marble in enumerate(player.list_marble):
@@ -313,9 +365,6 @@ class Dog(Game):
     def get_player_view(self, idx_player: int) -> GameState:
         """ Get the masked state for the active player (e.g. the oppontent's cards are face down)"""
         pass
-
-
-
 
 
 class RandomPlayer(Player):
