@@ -314,8 +314,8 @@ class Dog(Game):
 
     def _process_joker_action(self, player: PlayerState, action: Action) -> None:
         """
-        Verarbeitet die Aktion, wenn ein Joker gespielt wird.
-        Entfernt den gespielten Joker aus der Hand und setzt `card_active`.
+        Processes the action when a joker is played.
+        Removes the played joker from the hand and sets `card_active`..
         """
         if action.card.rank != "JKR":
             raise ValueError("Nur Joker-Aktionen sind in dieser Funktion erlaubt.")
