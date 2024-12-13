@@ -241,7 +241,7 @@ class Dog(Game):
         when the player has a JOKER card.
         """
         actions = []
-        start_position = StartNumbers[player.colour]
+        start_position = StartNumbers[player.colour].value
 
         joker_cards = [card for card in player.list_card if card.rank == "JKR"]
         if joker_cards:
