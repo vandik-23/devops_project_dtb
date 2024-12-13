@@ -188,7 +188,6 @@ class Dog(Game):
         if not self.state.bool_card_exchanged:
             return self._generate_card_exchange_actions(player)
 
-        # Wenn `card_active` gesetzt ist, generiere nur Aktionen basierend auf dieser Karte
         if self.state.card_active:
             actions = []
             for marble in player.list_marble:
