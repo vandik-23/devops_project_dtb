@@ -188,22 +188,26 @@ class Dog(Game):
         if not self.state.bool_card_exchanged:
             return self._generate_card_exchange_actions(player) # calls helper method for the exchange
         
-
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
         if len(marbles_in_kennel) == 4:
-            return self._if_all_marbles_in_kennel(player, marbles_in_kennel)
-        else:
-            actions = []
-            for marble in marbles_in_play:
-                for card in player.list_card:
-                    for move in MOVES[card.rank]:
+            return self._generate_kennel_and_joker_actions(player, marbles_in_kennel)
+        
+        # Special case: If the player has a JOKER card, generate JOKER-specific actions
+        joker_actions = self._generate_joker_swap_actions(player)
+        if joker_actions:
+            return joker_actions
+        
+        actions = []
+        for marble in marbles_in_play:
+            for card in player.list_card:
+                for move in MOVES[card.rank]:
 
-                        current_position = marble.pos
-                        destination = (current_position + move) % 64
-                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
-                            continue # action not possible
-                        actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
-            return actions
+                    current_position = marble.pos
+                    destination = (current_position + move) % 64
+                    if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                        continue # action not possible
+                    actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
+        return actions
 
     def _generate_card_exchange_actions(self, player: PlayerState) -> List[Action]:
         """returns list of possible Actions for the card exchange"""
@@ -229,24 +233,74 @@ class Dog(Game):
             else:
                 marbles_in_kennel.append(marble)
         return marbles_in_play, marbles_in_kennel
+    
 
-    def _if_all_marbles_in_kennel(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
-        """Lists all actions that are possible if all marbles of a player are in the kennel."""
-        start_position = StartNumbers[player.colour]
-        card_ranks = [card.rank for card in player.list_card]
-        if not any(item in card_ranks for item in ["JKR","A", "K"]):
-            return []
-        else:
-            marble_in_kennel_positions = [marble.pos for marble in marbles_in_kennel]
-            return [
-                Action(
-                    card=card,
-                    pos_from=min(marble_in_kennel_positions),
-                    pos_to=start_position,
-                )
-                for card in player.list_card
-                if card.rank in ["JKR","A", "K"]
+    def _generate_kennel_and_joker_actions(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
+        """
+        Generate possible actions when all marbles are in the kennel and/or
+        when the player has a JOKER card.
+        """
+        actions = []
+        start_position = StartNumbers[player.colour].value
+
+        joker_cards = [card for card in player.list_card if card.rank == "JKR"]
+        if joker_cards:
+            LIST_SUIT = GameState.LIST_SUIT  
+            swap_cards = [
+                Card(suit=suit, rank=rank) 
+                for suit in LIST_SUIT 
+                for rank in ["A", "K"]
             ]
+            for joker_card in joker_cards:
+                # Tauschaktionen mit JOKER generieren
+                for swap_card in swap_cards:
+                    actions.append(
+                        Action(
+                            card=joker_card,
+                            pos_from=None,
+                            pos_to=None,
+                            card_swap=swap_card,
+                        )
+                    )
+
+        card_ranks = [card.rank for card in player.list_card]
+        if any(rank in ["JKR", "A", "K"] for rank in card_ranks):
+            marble_in_kennel_positions = [marble.pos for marble in marbles_in_kennel]
+            for card in player.list_card:
+                if card.rank in ["JKR", "A", "K"]:
+                    actions.append(
+                        Action(
+                            card=card,
+                            pos_from=min(marble_in_kennel_positions),
+                            pos_to=start_position,
+                        )
+                    )
+
+        return actions
+
+    def _generate_joker_swap_actions(self, player: PlayerState) -> list[Action]:
+        """generate all possible swap actions for JOKER"""
+
+        actions = []
+        joker_cards = [card for card in player.list_card if card.rank =="JKR"]
+
+        if joker_cards:
+            LIST_SUIT = GameState.LIST_SUIT
+            LIST_RANK = GameState.LIST_RANK[:-1]
+
+            for joker_card in joker_cards:
+                for suit in LIST_SUIT:
+                    for rank in LIST_RANK:
+                        swap_card = Card(suit=suit, rank=rank)
+                        actions.append(
+                            Action(
+                                card=joker_card,
+                                pos_from=None,
+                                pos_to=None,
+                                card_swap=swap_card,
+                            )
+                        )
+        return actions
 
     def _calculate_num_card(self, cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
@@ -274,7 +328,6 @@ class Dog(Game):
 
             num_cards = self._calculate_num_card(self.state.cnt_round)
             self._distribute_cards(num_cards)
-
 
     def apply_action(self, action: Action) -> None:
         """ Apply the given action to the game """
