@@ -312,17 +312,26 @@ class Dog(Game):
                         )
         return actions
 
-    def _chose_card_with_Joker_3(self, action: Action) -> None:
+    def _process_joker_action(self, player: PlayerState, action: Action) -> None:
         """
-        Handle the special case where a JOKER card is played to replace another card.
+        Verarbeitet die Aktion, wenn ein Joker gespielt wird.
+        Entfernt den gespielten Joker aus der Hand und setzt `card_active`.
         """
         if action.card.rank != "JKR":
-            raise ValueError("Function only called for Joker cards")
-        
+            raise ValueError("Nur Joker-Aktionen sind in dieser Funktion erlaubt.")
+
         if action.card_swap is None:
-            raise ValueError("provide card which joker replaces")
-        
+            raise ValueError("Es muss eine Karte angegeben werden, die der Joker ersetzt.")
+
+        for i, card in enumerate(player.list_card):
+            if card.rank == "JKR" and card.suit == action.card.suit:
+                player.list_card.pop(i)
+                break
+        else:
+            raise ValueError("Joker-Karte nicht in der Hand des Spielers gefunden.")
+
         self.state.card_active = action.card_swap
+
 
     def _calculate_num_card(self, cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
@@ -366,7 +375,7 @@ class Dog(Game):
             return
 
         if action.card.rank == "JKR" and action.card_swap is not None:
-            self._chose_card_with_Joker_3(action)
+            self._process_joker_action(player, action)
             return
 
         current_position = action.pos_from
