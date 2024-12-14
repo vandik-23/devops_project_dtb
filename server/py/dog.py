@@ -178,29 +178,32 @@ class Dog(Game):
     def get_list_action(self) -> List[Action]:
         """Get a list of possible actions for the active player"""
         player = self.state.list_player[self.state.idx_player_active]
-
-        # Checks if card exchange is completed
         if not self.state.bool_card_exchanged:
-            return self._generate_card_exchange_actions(player) # calls helper method for the exchange
-
+            return self._generate_card_exchange_actions(player)
+        if self.state.card_active is not None:
+            actions = []
+            for marble in player.list_marble:
+                for move in MOVES[self.state.card_active.rank]:
+                    current_position = marble.pos
+                    destination = (current_position + move) % 64
+                    if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                        continue
+                    actions.append(Action(card=self.state.card_active, pos_from=current_position, pos_to=destination))
+            return actions # calls helper method for the exchange
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
         if len(marbles_in_kennel) == 4:
             return self._generate_kennel_and_joker_actions(player, marbles_in_kennel)
-
-        # Special case: If the player has a JOKER card, generate JOKER-specific actions
         joker_actions = self._generate_joker_swap_actions(player)
         if joker_actions:
             return joker_actions
-
         actions = []
         for marble in marbles_in_play:
             for card in player.list_card:
                 for move in MOVES[card.rank]:
-
                     current_position = marble.pos
                     destination = (current_position + move) % 64
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
-                        continue # action not possible
+                        continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
         return actions
 
@@ -294,10 +297,32 @@ class Dog(Game):
                         )
         return actions
 
+    def _process_joker_action(self, player: PlayerState, action: Action) -> None:
+        """
+        Processes the action when a joker is played.
+        Removes the played joker from the hand and sets `card_active`..
+        """
+        if action.card.rank != "JKR":
+            raise ValueError("Nur Joker-Aktionen sind in dieser Funktion erlaubt.")
+
+        if action.card_swap is None:
+            raise ValueError("Es muss eine Karte angegeben werden, die der Joker ersetzt.")
+
+        for i, card in enumerate(player.list_card):
+            if card.rank == "JKR" and card.suit == action.card.suit:
+                player.list_card.pop(i)
+                break
+        else:
+            raise ValueError("Joker-Karte nicht in der Hand des Spielers gefunden.")
+
+        self.state.card_active = action.card_swap
+
+
     def _calculate_num_card(self, cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
         effective_round = (cnt_round - 1) % 5 + 1
         return max(6 - (effective_round - 1), 1)
+
 
     def _distribute_cards(self, num_cards: int) -> None:
         """Distribute a specific number of cards to each player."""
@@ -311,10 +336,10 @@ class Dog(Game):
         if not self.state.bool_card_exchanged:
             self._exchange_cards(player, action)
             return None
-
         if action is None:
-            return self._action_none(player)
-
+            return self. _action_none(player)
+        if action.card.rank == "JKR" and action.card_swap is not None:
+            return self._process_joker_action(player, action)
         current_position = action.pos_from
         destination = action.pos_to
         marble_idx = self._get_marble_idx_from_position(player, current_position)
@@ -326,8 +351,13 @@ class Dog(Game):
             player.list_marble[marble_idx].is_save = True
         card_idx = self._get_card_idx_in_hand(player, action)
         if card_idx < 0:
-            raise ValueError("You don't have a this card in Hand.")
+            raise ValueError("You don't have this card in Hand.")
         player.list_card.pop(card_idx)
+
+        # Reset card_active nach Joker-Aktionen
+        if self.state.card_active and self.state.card_active == action.card:
+            self.state.card_active = None
+
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
 
         return None
@@ -336,7 +366,6 @@ class Dog(Game):
         if player.list_card: # Player has cards, but no action possible
             player.list_card = []
             return
-        # Player has no cards (beginning of round)
         if all(not player.list_card for player in self.state.list_player): # all players have no cards
             self.state.cnt_round += 1
         num_cards = self._calculate_num_card(self.state.cnt_round)
@@ -345,7 +374,6 @@ class Dog(Game):
             self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
         self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
         return
-
 
     def _exchange_cards(self, player: PlayerState, action: Action) -> None:
         idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
