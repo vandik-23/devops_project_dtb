@@ -381,18 +381,20 @@ class Dog(Game):
         current_position = action.pos_from
         destination = action.pos_to
         marble_idx = self._get_marble_idx_from_position(player, current_position)
+        other_player, other_marble_idx = self._get_other_marble_idx_from_position(player, destination)
         if marble_idx < 0:
             raise ValueError("You don't have a marble at your specified position.")
         if destination is not None:
             player.list_marble[marble_idx].pos = destination
         if destination == StartNumbers[player.colour].value and current_position in KennelNumbers[player.colour].value:
             player.list_marble[marble_idx].is_save = True
+        if action.card.rank == "J":
+            other_player.list_marble[other_marble_idx].pos = current_position
         card_idx = self._get_card_idx_in_hand(player, action)
         if card_idx < 0:
             raise ValueError("You don't have a this card in Hand.")
         player.list_card.pop(card_idx)
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
-
         return None
 
     def _action_none(self, player: PlayerState) -> None:
@@ -430,6 +432,14 @@ class Dog(Game):
             if marble.pos == position:
                 return i
         return -1
+
+    def _get_other_marble_idx_from_position(self, player: PlayerState, position: int | None) -> tuple[PlayerState, int]:
+        for idx_other_player, other_player in enumerate(self.state.list_player):
+            if idx_other_player != self.state.idx_player_active:
+                other_marble_idx = self._get_marble_idx_from_position(other_player, position)
+                if other_marble_idx != -1:
+                    return other_player, other_marble_idx
+        return None, -1
 
     def _get_card_idx_in_hand(self, player: PlayerState, action: Action) -> int:
         for i, card in enumerate(player.list_card):
