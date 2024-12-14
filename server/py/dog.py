@@ -230,7 +230,6 @@ class Dog(Game):
                 marbles_in_kennel.append(marble)
         return marbles_in_play, marbles_in_kennel
 
-
     def _generate_kennel_and_joker_actions(self, player: PlayerState, marbles_in_kennel: list[Marble]) -> list[Action]:
         """
         Generate possible actions when all marbles are in the kennel and/or
@@ -297,29 +296,13 @@ class Dog(Game):
 
     def _calculate_num_card(self, cnt_round: int) -> int:
         """Calculate the number of cards to deal based on the round number."""
-        if cnt_round <= 5:
-            return max(6 - (cnt_round - 1), 1)  # Runden 1-5: Kartenanzahl reduziert sich
-        return 6
-
+        effective_round = (cnt_round - 1) % 5 + 1
+        return max(6 - (effective_round - 1), 1)
 
     def _distribute_cards(self, num_cards: int) -> None:
         """Distribute a specific number of cards to each player."""
-        for player in self.state.list_player:
-            player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
-
-    def _no_action_possible(self) -> None:
-        """
-        Handle the case when no action is possible.
-        This progresses the game state to the next active player or the next round.
-        """
-        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
-
-        if self.state.idx_player_active == self.state.idx_player_started:
-
-            self.state.cnt_round += 1
-
-            num_cards = self._calculate_num_card(self.state.cnt_round)
-            self._distribute_cards(num_cards)
+        player = self.state.list_player[self.state.idx_player_active]
+        player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
 
     def apply_action(self, action: Action) -> None:
         """ Apply the given action to the game """
@@ -327,12 +310,10 @@ class Dog(Game):
 
         if not self.state.bool_card_exchanged:
             self._exchange_cards(player, action)
-            return
+            return None
 
-        if action is None:  # fold cards if no action is possible
-            player.list_card = []
-            self._no_action_possible()
-            return
+        if action is None:
+            return self._action_none(player)
 
         current_position = action.pos_from
         destination = action.pos_to
@@ -349,15 +330,31 @@ class Dog(Game):
         player.list_card.pop(card_idx)
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
 
+        return None
+
+    def _action_none(self, player: PlayerState) -> None:
+        if player.list_card: # Player has cards, but no action possible
+            player.list_card = []
+            return
+        # Player has no cards (beginning of round)
+        if all(not player.list_card for player in self.state.list_player): # all players have no cards
+            self.state.cnt_round += 1
+        num_cards = self._calculate_num_card(self.state.cnt_round)
+        self._distribute_cards(num_cards)
+        if all(player.list_card for player in self.state.list_player):
+            self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+        self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
         return
+
 
     def _exchange_cards(self, player: PlayerState, action: Action) -> None:
         idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
         partner = self.state.list_player[idx_partner]
 
         # Exchange the card
-        player.list_card.remove(action.card)
-        partner.list_card.append(action.card)
+        if action is not None:
+            player.list_card.remove(action.card)
+            partner.list_card.append(action.card)
 
         # Move to next player
         self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
