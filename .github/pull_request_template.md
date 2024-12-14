@@ -1,7 +1,23 @@
 # PR Description
 ### What is the content of this PR? Which functionality did you add?
 
-### Which methods or objects did you modify?
+### Did you run pylint and mypy?
+
+If not installed yet:
+
+```bash
+# activate your venv
+pip install pylint mypy
+```
+
+Then run:
+```bash
+pylint server/py/dog.py
+mypy server/py/dog.py
+```
+- [ ] pylint
+- [ ] mypy
+
 
 ### Which tests have passed?
 
