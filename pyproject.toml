@@ -21,22 +21,3 @@ dependencies = [
     "pytest==8.2.1",
     "coverage==7.5.1",
 ]
-
-[tool.ruff]
-line-length = 120
-
-[tool.ruff.lint]
-select = [
-    "F",  # pyflakes rules
-    "E",  # pycodestyle error rules
-    "W",  # pycodestyle warning rules
-    "B",  # flake8-bugbear rules
-    "I",  # isort rules
-]
-ignore = [
-    "E501",  # line-too-long
-    "W191",  # indentation contains tabs
-]
-
-[tool.ruff.format]
-indent-style = "space"

@@ -180,7 +180,7 @@ class Dog(Game):
         player = self.state.list_player[self.state.idx_player_active]
         if not self.state.bool_card_exchanged:
             return self._generate_card_exchange_actions(player)
-        if self.state.card_active:
+        if self.state.card_active is not None:
             actions = []
             for marble in player.list_marble:
                 for move in MOVES[self.state.card_active.rank]:
