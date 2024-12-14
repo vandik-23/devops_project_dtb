@@ -207,8 +207,7 @@ class Dog(Game):
 
         # Special case: If the player has a JAKE card, generate JAKE-specific actions
         jake_actions = self._generate_jake_swap_actions(player, marbles_in_play, other_marbles_in_play)
-        if jake_actions == []:
-           jake_actions.append(Action(card=card, pos_from=StartNumbers[player.colour].value, pos_to=StartNumbers[player.colour].value)+1)
+
         actions = []
         for marble in marbles_in_play:
             for card in player.list_card:
@@ -241,7 +240,9 @@ class Dog(Game):
                     or marble.pos not in StartNumbers['GREEN'].value \
                     or marble.pos not in StartNumbers['YELLOW'].value):
                     positions_jake_to.append(marble.pos)
-
+            if positions_jake_to == []:
+                positions_jake_to = positions_jake_from[:-1]
+                positions_jake_from = positions_jake_from[-1:]
             for jake_card in jake_cards:
                 for position_jake_from in positions_jake_from:
                     for position_jake_to in positions_jake_to:
@@ -261,6 +262,9 @@ class Dog(Game):
                             card_swap= None,
                             )
                         )
+            #if actions == []:
+               # for jake_card in jake_cards:
+                  #  actions.append(Action(card=jake_card, pos_from=StartNumbers[player.colour].value, pos_to=StartNumbers[player.colour].value)+1)
         return actions
 
     def _generate_card_exchange_actions(self, player: PlayerState) -> List[Action]:
