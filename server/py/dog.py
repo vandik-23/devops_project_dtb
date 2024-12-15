@@ -104,7 +104,7 @@ class StartNumbers(int, Enum):
 
 
 class FinishNumbers(Enum):
-    BLUE = (68 ,69 ,70 ,71)
+    BLUE = (68, 69, 70, 71)
     GREEN = (76, 77, 78, 79)
     RED = (84, 85, 86, 87)
     YELLOW = (92, 93, 94, 95)
@@ -184,11 +184,11 @@ class Dog(Game):
 
     def get_list_action(self) -> List[Action]:
         """Get a list of possible actions for the active player"""
+        actions = []
         player = self.state.list_player[self.state.idx_player_active]
         if not self.state.bool_card_exchanged:
             return self._generate_card_exchange_actions(player)
         if self.state.card_active is not None:
-            actions = []
             for marble in player.list_marble:
                 for move in MOVES[self.state.card_active.rank]:
                     current_position = marble.pos
@@ -206,8 +206,11 @@ class Dog(Game):
             return joker_actions
 
         # Special case: If the player has a JAKE card, generate JAKE-specific actions
-        jake_actions = self._generate_jake_swap_actions(player, marbles_in_play)
-        actions = []
+        jake_cards = [card for card in player.list_card if card.rank =="J"]
+        if jake_cards:
+            actions = self._generate_jake_swap_actions(player, jake_cards, marbles_in_play)
+
+        # Collect all move options for each marbles and cards inhand
         for marble in marbles_in_play:
             for card in player.list_card:
                 for move in MOVES[card.rank]:
@@ -216,9 +219,10 @@ class Dog(Game):
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
-        return actions + jake_actions
+        return actions
 
-    def _generate_jake_swap_actions(self, player: PlayerState, marbles_in_play: list[Marble]) -> List[Action]:
+    def _generate_jake_swap_actions(self, player: PlayerState, jake_cards: list[Card], marbles_in_play: list[Marble]) \
+        -> List[Action]:
         """
         Jake card rules: Player must select to swap marbles with another player's marble.
         The swap must occur unless no valid marbles are available for swapping.
@@ -234,38 +238,36 @@ class Dog(Game):
             if idx_other_player != self.state.idx_player_active:
                 other_marbles_in_play.extend(self._get_marbles_in_kennel_and_in_play(other_player)[0])
 
-        jake_cards = [card for card in player.list_card if card.rank =="J"]
-        if jake_cards:
-            positions_jake_from = []
-            positions_jake_to = []
-            for marble in marbles_in_play:
-                if  marble.pos not in FinishNumbers[player.colour].value:
-                    positions_jake_from.append(marble.pos)
-            for marble in other_marbles_in_play:
-                if not marble.is_save and marble.pos not in invalid_positions:
-                    positions_jake_to.append(marble.pos)
-            if not positions_jake_to:
-                positions_jake_to = positions_jake_from[:-1]
-                positions_jake_from = positions_jake_from[-1:]
-            for jake_card in jake_cards:
-                for position_jake_from in positions_jake_from:
-                    for position_jake_to in positions_jake_to:
-                        actions.append(
-                            Action(
-                            card=jake_card,
-                            pos_from=position_jake_from,
-                            pos_to=position_jake_to,
-                            card_swap= None,
-                            )
+        positions_jake_from = []
+        positions_jake_to = []
+        for marble in marbles_in_play:
+            if  marble.pos not in FinishNumbers[player.colour].value:
+                positions_jake_from.append(marble.pos)
+        for marble in other_marbles_in_play:
+            if not marble.is_save and marble.pos not in invalid_positions:
+                positions_jake_to.append(marble.pos)
+        if not positions_jake_to:
+            positions_jake_to = positions_jake_from[:-1]
+            positions_jake_from = positions_jake_from[-1:]
+        for jake_card in jake_cards:
+            for position_jake_from in positions_jake_from:
+                for position_jake_to in positions_jake_to:
+                    actions.append(
+                        Action(
+                        card=jake_card,
+                        pos_from=position_jake_from,
+                        pos_to=position_jake_to,
+                        card_swap= None,
                         )
-                        actions.append(
-                            Action(
-                            card=jake_card,
-                            pos_from=position_jake_to,
-                            pos_to=position_jake_from,
-                            card_swap= None,
-                            )
+                    )
+                    actions.append(
+                        Action(
+                        card=jake_card,
+                        pos_from=position_jake_to,
+                        pos_to=position_jake_from,
+                        card_swap= None,
                         )
+                    )
         return actions
 
     def _generate_card_exchange_actions(self, player: PlayerState) -> List[Action]:
