@@ -25,7 +25,7 @@ class PlayerState(BaseModel):
     colour: Literal["RED", "BLUE", "GREEN", "YELLOW"]  # colour of player
     list_card: List[Card]  # list of cards
     list_marble: List[Marble]  # list of marbles
-
+    state: Literal["active", "finished"]  # playing or finished player
 
 class Action(BaseModel):
     card: Card  # card to play
@@ -143,24 +143,28 @@ class Dog(Game):
                     colour="BLUE",
                     list_card=GameState.LIST_CARD[:6],
                     list_marble=[Marble(pos=64), Marble(pos=65), Marble(pos=66), Marble(pos=67)],
+                    state="active",
                 ),
                 PlayerState(
                     name="Trick",
                     colour="GREEN",
                     list_card=GameState.LIST_CARD[6:12],
                     list_marble=[Marble(pos=72), Marble(pos=73), Marble(pos=74), Marble(pos=75)],
+                    state="active",
                 ),
                 PlayerState(
                     name="Track",
                     colour="RED",
                     list_card=GameState.LIST_CARD[12:18],
                     list_marble=[Marble(pos=80), Marble(pos=81), Marble(pos=82), Marble(pos=83)],
+                    state="active",
                 ),
                 PlayerState(
                     name="Donald",
                     colour="YELLOW",
                     list_card=GameState.LIST_CARD[18:24],
                     list_marble=[Marble(pos=88), Marble(pos=89), Marble(pos=90), Marble(pos=91)],
+                    state="active",
                 ),
             ],
             list_card_draw=GameState.LIST_CARD[24:],
@@ -425,7 +429,25 @@ class Dog(Game):
             self.state.card_active = None
 
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
+
+        self._finish_game()
         return None
+
+    def _finish_game(self) -> None:
+        for player in self.state.list_player:
+            finish_positions = FinishNumbers[player.colour].value
+            if self._is_player_in_finish(player, finish_positions):
+                player.state = "finished"
+
+        if self.state.list_player[0].state == "finished" and self.state.list_player[2].state == "finished" or \
+           self.state.list_player[1].state == "finished" and self.state.list_player[3].state == "finished":
+            self.state.phase = GamePhase.FINISHED
+
+    def _is_player_in_finish(self, player: PlayerState, finish_positions: tuple) -> bool:
+        for marble in player.list_marble:
+            if marble.pos not in finish_positions:
+                return False
+        return True
 
     def _action_none(self, player: PlayerState) -> None:
         if player.list_card: # Player has cards, but no action possible
