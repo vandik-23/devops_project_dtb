@@ -199,11 +199,6 @@ class Dog(Game):
             return actions # calls helper method for the exchange
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
 
-        other_marbles_in_play = []
-        for idx_other_player, other_player in enumerate(self.state.list_player):
-            if idx_other_player != self.state.idx_player_active:
-                other_marbles_in_play.extend(self._get_marbles_in_kennel_and_in_play(other_player)[0])
-
         if len(marbles_in_kennel) == 4:
             return self._generate_kennel_and_joker_actions(player, marbles_in_kennel)
         joker_actions = self._generate_joker_swap_actions(player)
@@ -211,7 +206,7 @@ class Dog(Game):
             return joker_actions
 
         # Special case: If the player has a JAKE card, generate JAKE-specific actions
-        jake_actions = self._generate_jake_swap_actions(player, marbles_in_play, other_marbles_in_play)
+        jake_actions = self._generate_jake_swap_actions(player, marbles_in_play)
         actions = []
         for marble in marbles_in_play:
             for card in player.list_card:
@@ -223,12 +218,22 @@ class Dog(Game):
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
         return actions + jake_actions
 
-    def _generate_jake_swap_actions(self, player: PlayerState, marbles_in_play: list[Marble], other_marbels_in_play: list[Marble] ) -> List[Action]:
+    def _generate_jake_swap_actions(self, player: PlayerState, marbles_in_play: list[Marble]) -> List[Action]:
         """
         Jake card rules: Player must select to swap marbles with another player's marble.
         The swap must occur unless no valid marbles are available for swapping.
         """
         actions = []
+        other_marbles_in_play = []
+        invalid_positions = set(FinishNumbers['BLUE'].value +
+                                 FinishNumbers['RED'].value +
+                                 FinishNumbers['GREEN'].value +
+                                 FinishNumbers['YELLOW'].value)
+        invalid_positions.update([StartNumbers.BLUE, StartNumbers.RED, StartNumbers.GREEN, StartNumbers.YELLOW])
+        for idx_other_player, other_player in enumerate(self.state.list_player):
+            if idx_other_player != self.state.idx_player_active:
+                other_marbles_in_play.extend(self._get_marbles_in_kennel_and_in_play(other_player)[0])
+
         jake_cards = [card for card in player.list_card if card.rank =="J"]
         if jake_cards:
             positions_jake_from = []
@@ -236,18 +241,10 @@ class Dog(Game):
             for marble in marbles_in_play:
                 if  marble.pos not in FinishNumbers[player.colour].value:
                     positions_jake_from.append(marble.pos)
-            for marble in other_marbels_in_play:
-                if marble.is_save == False and \
-                    (marble.pos not in FinishNumbers['BLUE'].value \
-                    or marble.pos not in FinishNumbers['RED'].value \
-                    or marble.pos not in FinishNumbers['GREEN'].value \
-                    or marble.pos not in FinishNumbers['YELLOW'].value \
-                    or marble.pos not in StartNumbers['BLUE'].value \
-                    or marble.pos not in StartNumbers['RED'].value \
-                    or marble.pos not in StartNumbers['GREEN'].value \
-                    or marble.pos not in StartNumbers['YELLOW'].value):
+            for marble in other_marbles_in_play:
+                if not marble.is_save and marble.pos not in invalid_positions:
                     positions_jake_to.append(marble.pos)
-            if positions_jake_to == []:
+            if not positions_jake_to:
                 positions_jake_to = positions_jake_from[:-1]
                 positions_jake_from = positions_jake_from[-1:]
             for jake_card in jake_cards:
@@ -405,7 +402,7 @@ class Dog(Game):
         current_position = action.pos_from
         destination = action.pos_to
         marble_idx = self._get_marble_idx_from_position(player, current_position)
-        other_player, other_marble_idx = self._get_other_marble_idx_from_position(player, destination)
+        other_player, other_marble_idx = self._get_other_marble_idx_from_position(destination)
         if marble_idx < 0:
             raise ValueError("You don't have a marble at your specified position.")
         if destination is not None:
@@ -414,7 +411,7 @@ class Dog(Game):
             player.list_marble[marble_idx].is_save = True
 
         # Execute the second part of the jake card swap to complete action
-        if action.card.rank == "J":
+        if action.card.rank == "J" and other_player is not None and current_position is not None:
             other_player.list_marble[other_marble_idx].pos = current_position
         card_idx = self._get_card_idx_in_hand(player, action)
         if card_idx < 0:
@@ -462,7 +459,7 @@ class Dog(Game):
                 return i
         return -1
 
-    def _get_other_marble_idx_from_position(self, player: PlayerState, position: int | None) -> tuple[PlayerState, int]:
+    def _get_other_marble_idx_from_position(self, position: int | None) -> tuple[PlayerState | None, int]:
         for idx_other_player, other_player in enumerate(self.state.list_player):
             if idx_other_player != self.state.idx_player_active:
                 other_marble_idx = self._get_marble_idx_from_position(other_player, position)
