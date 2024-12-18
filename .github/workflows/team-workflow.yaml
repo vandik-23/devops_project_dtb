@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Authenticate Google Cloud
+      # Step 2: Authenticate Google Cloud --> these credential we have to add in Repo Secrets!
       - name: Authenticate Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -24,7 +24,7 @@ jobs:
           project_id: "${{ secrets.GCLOUD_PROJECT_ID }}"
           workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
 
-      # Step 3: Configure gcloud CLI --> these credential we have to add in Repo Secrets!
+      # Step 3: Configure gcloud CLI
       - name: Configure gcloud
         run: |
           echo "Configuring gcloud CLI"
