@@ -24,7 +24,7 @@ jobs:
           project_id: "${{ secrets.GCLOUD_PROJECT_ID }}"
           workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
 
-      # Step 3: Configure gcloud CLI
+      # Step 3: Configure gcloud CLI --> these credential we have to add in Repo Secrets!
       - name: Configure gcloud
         run: |
           echo "Configuring gcloud CLI"
@@ -44,3 +44,9 @@ jobs:
             --image europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest \
             --region europe-west6 \
             --allow-unauthenticated
+
+# We can verify the successful deployment:
+# Go to the Actions tab in your GitHub repository
+# Search for a new workflow run triggered under the name Deploy to Google Cloud Run
+# Click on the workflow run to view the logs and monitor its execution
+# Once the workflow completes successfully, it will print a URL to your deployed Google Cloud Run service in the logs.
