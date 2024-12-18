@@ -25,7 +25,7 @@ class PlayerState(BaseModel):
     colour: Literal["RED", "BLUE", "GREEN", "YELLOW"]  # colour of player
     list_card: List[Card]  # list of cards
     list_marble: List[Marble]  # list of marbles
-    state: Literal["active", "finished"]  # playing or finished player
+    finished: bool = False  # playing or finished player
 
 class Action(BaseModel):
     card: Card  # card to play
@@ -143,28 +143,24 @@ class Dog(Game):
                     colour="BLUE",
                     list_card=GameState.LIST_CARD[:6],
                     list_marble=[Marble(pos=64), Marble(pos=65), Marble(pos=66), Marble(pos=67)],
-                    state="active",
                 ),
                 PlayerState(
                     name="Trick",
                     colour="GREEN",
                     list_card=GameState.LIST_CARD[6:12],
                     list_marble=[Marble(pos=72), Marble(pos=73), Marble(pos=74), Marble(pos=75)],
-                    state="active",
                 ),
                 PlayerState(
                     name="Track",
                     colour="RED",
                     list_card=GameState.LIST_CARD[12:18],
                     list_marble=[Marble(pos=80), Marble(pos=81), Marble(pos=82), Marble(pos=83)],
-                    state="active",
                 ),
                 PlayerState(
                     name="Donald",
                     colour="YELLOW",
                     list_card=GameState.LIST_CARD[18:24],
                     list_marble=[Marble(pos=88), Marble(pos=89), Marble(pos=90), Marble(pos=91)],
-                    state="active",
                 ),
             ],
             list_card_draw=GameState.LIST_CARD[24:],
@@ -437,10 +433,10 @@ class Dog(Game):
         for player in self.state.list_player:
             finish_positions = FinishNumbers[player.colour].value
             if self._is_player_in_finish(player, finish_positions):
-                player.state = "finished"
+                player.finished = True
 
-        if self.state.list_player[0].state == "finished" and self.state.list_player[2].state == "finished" or \
-           self.state.list_player[1].state == "finished" and self.state.list_player[3].state == "finished":
+        if self.state.list_player[0].finished and self.state.list_player[2].finished or \
+           self.state.list_player[1].finished and self.state.list_player[3].finished:
             self.state.phase = GamePhase.FINISHED
 
     def _is_player_in_finish(self, player: PlayerState, finish_positions: tuple) -> bool:
