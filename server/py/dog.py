@@ -25,7 +25,7 @@ class PlayerState(BaseModel):
     colour: Literal["RED", "BLUE", "GREEN", "YELLOW"]  # colour of player
     list_card: List[Card]  # list of cards
     list_marble: List[Marble]  # list of marbles
-
+    finished: bool = False  # playing or finished player
 
 class Action(BaseModel):
     card: Card  # card to play
@@ -425,7 +425,25 @@ class Dog(Game):
             self.state.card_active = None
 
         self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
+
+        self._finish_game()
         return None
+
+    def _finish_game(self) -> None:
+        for player in self.state.list_player:
+            finish_positions = FinishNumbers[player.colour].value
+            if self._is_player_in_finish(player, finish_positions):
+                player.finished = True
+
+        if self.state.list_player[0].finished and self.state.list_player[2].finished or \
+           self.state.list_player[1].finished and self.state.list_player[3].finished:
+            self.state.phase = GamePhase.FINISHED
+
+    def _is_player_in_finish(self, player: PlayerState, finish_positions: tuple) -> bool:
+        for marble in player.list_marble:
+            if marble.pos not in finish_positions:
+                return False
+        return True
 
     def _action_none(self, player: PlayerState) -> None:
         if player.list_card: # Player has cards, but no action possible
