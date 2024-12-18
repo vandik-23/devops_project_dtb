@@ -1,0 +1,46 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # Run the workflow on push to the main branch
+
+jobs:
+  deploy-job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Authenticate Google Cloud
+      - name: Authenticate Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          service_account: "${{ secrets.GCLOUD_SERVICE_ACCOUNT_EMAIL }}"
+          project_id: "${{ secrets.GCLOUD_PROJECT_ID }}"
+          workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
+
+      # Step 3: Configure gcloud CLI
+      - name: Configure gcloud
+        run: |
+          echo "Configuring gcloud CLI"
+          gcloud auth configure-docker europe-west6-docker.pkg.dev
+          gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
+
+      # Step 4: Build and push Docker image
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest .
+          docker push europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest
+
+      # Step 5: Deploy to Google Cloud Run
+      - name: Deploy to Google Cloud Run
+        run: |
+          gcloud run deploy game-server-service \
+            --image europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest \
+            --region europe-west6 \
+            --allow-unauthenticated
