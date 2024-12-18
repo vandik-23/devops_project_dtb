@@ -187,7 +187,7 @@ class Dog(Game):
         actions = []
         player = self.state.list_player[self.state.idx_player_active]
         if not self.state.bool_card_exchanged:
-            return self._generate_card_exchange_actions(player)
+            return self._unique_actions(self._generate_card_exchange_actions(player))
         if self.state.card_active is not None:
             for marble in player.list_marble:
                 for move in MOVES[self.state.card_active.rank]:
@@ -196,14 +196,15 @@ class Dog(Game):
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=self.state.card_active, pos_from=current_position, pos_to=destination))
-            return actions # calls helper method for the exchange
+            return self._unique_actions(actions) # calls helper method for the exchange
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
 
         if len(marbles_in_kennel) == 4:
-            return self._generate_kennel_and_joker_actions(player, marbles_in_kennel)
+            return self._unique_actions(self._generate_kennel_and_joker_actions(player, marbles_in_kennel))
+
         joker_actions = self._generate_joker_swap_actions(player)
         if joker_actions:
-            return joker_actions
+            return self._unique_actions(joker_actions)
 
         # Special case: If the player has a JAKE card, generate JAKE-specific actions
         jake_cards = [card for card in player.list_card if card.rank =="J"]
@@ -219,7 +220,14 @@ class Dog(Game):
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
-        return actions
+        return self._unique_actions(actions)
+
+    def _unique_actions(self, actions: List[Action]) -> List[Action]:
+        unique_actions = []
+        for action in actions:
+            if action not in unique_actions:
+                unique_actions.append(action)
+        return unique_actions
 
     def _generate_jake_swap_actions(self, player: PlayerState, jake_cards: list[Card], marbles_in_play: list[Marble]) \
         -> List[Action]:
