@@ -461,7 +461,7 @@ class Dog(Game):
             self.state.cnt_round += 1
         num_cards = self._calculate_num_card(self.state.cnt_round)
         if num_cards > len(self.state.list_card_draw):
-                self._reshuffle()
+            self._reshuffle()
         self._distribute_cards(num_cards)
         if all(player.list_card for player in self.state.list_player):
             self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
