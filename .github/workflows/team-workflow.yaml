@@ -20,9 +20,9 @@ jobs:
       - name: Authenticate Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          service_account: "${{ secrets.GCLOUD_SERVICE_ACCOUNT_EMAIL }}"
-          project_id: "${{ secrets.GCLOUD_PROJECT_ID }}"
-          workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ secrets.GCLOUD_SERVICE_ACCOUNT_EMAIL }}" # Secret 1
+          project_id: "${{ secrets.GCLOUD_PROJECT_ID }}" # Secret 2
+          workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}" # Secret 3
 
       # Step 3: Configure gcloud CLI
       - name: Configure gcloud
