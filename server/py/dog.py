@@ -127,6 +127,13 @@ MOVES = {
     "JKR": [-1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
 }
 
+
+class CardSevenMetadata(BaseModel):
+    remaining_steps: int | None
+    actions: list[Action]
+    actions_other_players: list[Action]
+
+
 class Dog(Game):
     def __init__(self) -> None:
         """ Game initialization (set_state call not necessary, we expect 4 players) """
@@ -167,6 +174,7 @@ class Dog(Game):
             list_card_discard=[],
             card_active=None,
         )
+        self.card_seven_metadata = CardSevenMetadata(remaining_steps=None, actions=[], actions_other_players=[])
 
     def set_state(self, state: GameState) -> None:
         """Set the game to a given state"""
@@ -182,7 +190,7 @@ class Dog(Game):
         """Print the current game state"""
         print(self.state)
 
-    def get_list_action(self) -> List[Action]:
+    def get_list_action(self) -> List[Action]:  # pylint: disable=R0912
         """Get a list of possible actions for the active player"""
         actions = []
         player = self.state.list_player[self.state.idx_player_active]
@@ -190,13 +198,34 @@ class Dog(Game):
             return self._unique_actions(self._generate_card_exchange_actions(player))
         if self.state.card_active is not None:
             for marble in player.list_marble:
-                for move in MOVES[self.state.card_active.rank]:
-                    current_position = marble.pos
-                    destination = (current_position + move) % 64
-                    if self._check_if_save_marble_between_current_and_destination(current_position, destination):
-                        continue
-                    actions.append(Action(card=self.state.card_active, pos_from=current_position, pos_to=destination))
+                if marble.pos in KennelNumbers[player.colour].value:
+                    continue
+                current_position = marble.pos
+                if self.state.card_active.rank == "7":
+                    if self.card_seven_metadata.remaining_steps is None:
+                        possible_steps = list(range(1, 8))
+                    else:
+                        possible_steps = list(range(1, self.card_seven_metadata.remaining_steps+1))
+                    if 4 in possible_steps and current_position == StartNumbers[player.colour].value:
+                        possible_steps.append(-4)
+                    for step in possible_steps:
+                        destination = (current_position + step) % 64
+                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                            continue
+                        actions.append(
+                            Action(card=self.state.card_active, pos_from=current_position, pos_to=destination)
+                        )
+                else:
+                    for move in MOVES[self.state.card_active.rank]:
+                        current_position = marble.pos
+                        destination = (current_position + move) % 64
+                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                            continue
+                        actions.append(
+                            Action(card=self.state.card_active, pos_from=current_position, pos_to=destination)
+                        )
             return self._unique_actions(actions) # calls helper method for the exchange
+
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
 
         if len(marbles_in_kennel) == 4:
@@ -398,9 +427,10 @@ class Dog(Game):
         player = self.state.list_player[self.state.idx_player_active]
         player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
 
-    def apply_action(self, action: Action) -> None:
+    def apply_action(self, action: Action) -> None: # pylint: disable=R0912
         """ Apply the given action to the game """
         player = self.state.list_player[self.state.idx_player_active]
+        idx_player_active = self.state.idx_player_active
 
         if not self.state.bool_card_exchanged:
             self._exchange_cards(player, action)
@@ -426,16 +456,45 @@ class Dog(Game):
         card_idx = self._get_card_idx_in_hand(player, action)
         if card_idx < 0:
             raise ValueError("You don't have this card in Hand.")
-        player.list_card.pop(card_idx)
+        if action.card.rank != "7":
+            player.list_card.pop(card_idx)
+        if action.card.rank == "7":
+            if current_position is None or destination is None:
+                raise ValueError("Current and destination position must be specified for card 7.")
+            self._card_seven_logic(action, current_position, destination)
+            self.card_seven_metadata.actions.append(action)
 
-        # Reset card_active nach Joker-Aktionen
-        if self.state.card_active and self.state.card_active == action.card:
-            self.state.card_active = None
-
-        self._send_marble_home_if_possible(action, marble_idx, current_position, destination)
-
+        if current_position is not None and destination is not None:
+            self._send_marble_home_if_possible(
+                action, idx_player_active, marble_idx, current_position, destination
+            )
         self._finish_game()
         return None
+
+    def _card_seven_logic(self, action: Action, current_position: int, destination: int) -> None:
+        if self.card_seven_metadata.remaining_steps is None:
+            self.card_seven_metadata.remaining_steps = 7
+            self.state.card_active = action.card
+
+        steps = self._calculate_steps(current_position, destination)
+
+        if self.card_seven_metadata.remaining_steps - steps == 0:
+            self.card_seven_metadata.remaining_steps = None
+            self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
+            self.state.card_active = None
+        else:
+            self.card_seven_metadata.remaining_steps -= abs(steps)
+
+    def _calculate_steps(self, current_position: int, destination: int) -> int:
+        player = self.state.list_player[self.state.idx_player_active]
+        start_number = StartNumbers[player.colour].value
+        if start_number == 0:
+            start_number = 64
+        if current_position < start_number <= destination:
+            steps_to_start_number = start_number - current_position
+            steps_from_start_number = FinishNumbers[player.colour].value.index(destination) + 1
+            return steps_to_start_number + steps_from_start_number
+        return (destination - current_position) % 64
 
     def _finish_game(self) -> None:
         for player in self.state.list_player:
@@ -454,8 +513,27 @@ class Dog(Game):
         return True
 
     def _action_none(self, player: PlayerState) -> None:
-        if player.list_card: # Player has cards, but no action possible
+        if player.list_card:  # pylint: disable=R1702
             player.list_card = []
+            if self.state.card_active is not None:
+                if self.state.card_active.rank == "7" and (
+                    self.card_seven_metadata.remaining_steps is None or self.card_seven_metadata.remaining_steps > 0
+                ):
+                    self.state.card_active = None
+                    for action in self.card_seven_metadata.actions[::-1]: # revert all own actions
+                        action.pos_from, action.pos_to = action.pos_to, action.pos_from
+                        for marble in player.list_marble:
+                            if marble.pos == action.pos_from:
+                                marble.pos = action.pos_to or -1
+                                break
+
+                    for action in self.card_seven_metadata.actions_other_players: # revert all other players actions
+                        for player_ in self.state.list_player:
+                            for marble in player_.list_marble:
+                                if marble.pos == action.pos_to:
+                                    marble.pos = action.pos_from or -1
+                                    break
+                self.card_seven_metadata.remaining_steps = None
             return
         if all(not player.list_card for player in self.state.list_player): # all players have no cards
             self.state.cnt_round += 1
@@ -501,19 +579,41 @@ class Dog(Game):
                 return i
         return -1
 
-    def _send_marble_home_if_possible(
-            self, action: Action, marble_idx: int, current_position: int | None, destination: int | None
+    def _send_marble_home_if_possible( # pylint: disable=too-many-arguments
+            self,
+            action: Action,
+            idx_player_active: int,
+            marble_idx: int,
+            current_position: int,
+            destination: int,
         ) -> None:
+        all_marble_positions = [marble.pos for player in self.state.list_player for marble in player.list_marble]
+        num_marbles_on_dest = all_marble_positions.count(destination)
         for i, player in enumerate(self.state.list_player):
             kennel_positions = KennelNumbers[player.colour].value
             for j, marble in enumerate(player.list_marble):
-                if i == self.state.idx_player_active and j == marble_idx:
+                if i == idx_player_active and j == marble_idx:
                     continue # skip the marble that was moved
-                if action.card.rank == 7 and (current_position is not None and destination is not None):
+                if action.card.rank == "7" and (current_position is not None and destination is not None):
                     if marble.pos > current_position and marble.pos < destination:
+                        self.card_seven_metadata.actions_other_players.append(
+                            Action(
+                                card=Card(suit="", rank=""),
+                                pos_from=marble.pos,
+                                pos_to=kennel_positions[0]
+                            )
+                        )
                         marble.pos = kennel_positions[0] # find smarter way to allocate marbles to kennel
 
-                if marble.pos == destination:
+
+                if marble.pos == destination and num_marbles_on_dest > 1:
+                    self.card_seven_metadata.actions_other_players.append(
+                        Action(
+                            card=Card(suit="", rank=""),
+                            pos_from=marble.pos,
+                            pos_to=kennel_positions[0],
+                        )
+                    )
                     marble.pos = kennel_positions[0]
 
     def get_player_view(self, idx_player: int) -> GameState:
