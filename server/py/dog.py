@@ -255,18 +255,40 @@ class Dog(Game):
                 for move in MOVES[card.rank]:
                     current_position = marble.pos
                     destination = (current_position + move) % 64
-                    destination_cleaned = destination - StartNumbers[player.colour].value       
-                    if current_position in list(FinishNumbers[player.colour].value) and marble.is_save is False or marble.is_save is False and destination_cleaned < 5 and move != -4 or current_position == StartNumbers[player.colour].value and destination_cleaned < 5 and marble.is_save is False:
-                        if current_position in list(FinishNumbers[player.colour].value):
-                            destination_within_finish_list = current_position + move
-                            if self._check_if_save_marble_between_current_and_destination(current_position, destination_within_finish_list):
-                                continue
-                            if destination_within_finish_list in list(FinishNumbers[player.colour].value):
-                                actions.append(Action(card=card, pos_from=current_position, pos_to=destination_within_finish_list))
+                    moves_after_start = destination - StartNumbers[player.colour].value
+                    # Case 1: Marble in the finish area
+                    if (
+                        current_position in list(FinishNumbers[player.colour].value)
+                        and not marble.is_save
+                    ):
+                        destination_in_finish = current_position + move
+                        if destination_in_finish in [marble.pos for marble in marbles_in_play]:
                             continue
-                        finish_list = self._generate_finish_positions(player.colour)
-                        destination_finish = finish_list[destination_cleaned]
+                        if self._check_if_save_marble_between_current_and_destination(
+                            current_position,
+                            destination_in_finish,
+                        ):
+                            continue
+                        if destination_in_finish in list(FinishNumbers[player.colour].value):
+                            actions.append(Action(card=card, pos_from=current_position, pos_to=destination_in_finish))
+                        continue
+                    # Case 2: Special moves into the finish list
+                    if (
+                        move != -4
+                        and not marble.is_save
+                        and (
+                            (current_position == StartNumbers[player.colour].value and moves_after_start < 5)
+                            or (moves_after_start in range(0, 5))
+                        )
+                    ):
+                        finish_positions = self._generate_finish_positions(player.colour)
+                        destination_finish = finish_positions[moves_after_start]
+                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
+                            continue
+                        if destination_finish in [marble.pos for marble in marbles_in_play]:
+                            continue
                         actions.append(Action(card=card, pos_from=current_position, pos_to=destination_finish))
+                    # Case 3: General moves on the board
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
