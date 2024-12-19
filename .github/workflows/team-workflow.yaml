@@ -36,14 +36,14 @@ jobs:
       # Step 4: Build and push Docker image
       - name: Build and Push Docker Image
         run: |
-          docker build -t europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest .
-          docker push europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest
+          docker build -t europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-source-deploy/devops_server_image:latest .
+          docker push europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-source-deploy/devops_server_image:latest
 
       # Step 5: Deploy to Google Cloud Run
       - name: Deploy to Google Cloud Run
         run: |
           gcloud run deploy game-server-service \
-            --image europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest \
+            --image europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-source-deploy/devops_server_image:latest \
             --region europe-west6 \
             --allow-unauthenticated
 
