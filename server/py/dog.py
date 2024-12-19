@@ -25,7 +25,7 @@ class PlayerState(BaseModel):
     colour: Literal["RED", "BLUE", "GREEN", "YELLOW"]  # colour of player
     list_card: List[Card]  # list of cards
     list_marble: List[Marble]  # list of marbles
-
+    finished: bool = False  # playing or finished player
 
 class Action(BaseModel):
     card: Card  # card to play
@@ -195,7 +195,7 @@ class Dog(Game):
         actions = []
         player = self.state.list_player[self.state.idx_player_active]
         if not self.state.bool_card_exchanged:
-            return self._generate_card_exchange_actions(player)
+            return self._unique_actions(self._generate_card_exchange_actions(player))
         if self.state.card_active is not None:
             for marble in player.list_marble:
                 if marble.pos in KennelNumbers[player.colour].value:
@@ -217,22 +217,23 @@ class Dog(Game):
                         )
                 else:
                     for move in MOVES[self.state.card_active.rank]:
+                        current_position = marble.pos
                         destination = (current_position + move) % 64
-                        if self._check_if_save_marble_between_current_and_destination(
-                            current_position, destination
-                        ):
+                        if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                             continue
                         actions.append(
                             Action(card=self.state.card_active, pos_from=current_position, pos_to=destination)
                         )
-            return actions # calls helper method for the exchange
+            return self._unique_actions(actions) # calls helper method for the exchange
+
         marbles_in_play, marbles_in_kennel = self._get_marbles_in_kennel_and_in_play(player)
 
         if len(marbles_in_kennel) == 4:
-            return self._generate_kennel_and_joker_actions(player, marbles_in_kennel)
+            return self._unique_actions(self._generate_kennel_and_joker_actions(player, marbles_in_kennel))
+
         joker_actions = self._generate_joker_swap_actions(player)
         if joker_actions:
-            return joker_actions
+            return self._unique_actions(joker_actions)
 
         # Special case: If the player has a JAKE card, generate JAKE-specific actions
         jake_cards = [card for card in player.list_card if card.rank =="J"]
@@ -248,7 +249,14 @@ class Dog(Game):
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
-        return actions
+        return self._unique_actions(actions)
+
+    def _unique_actions(self, actions: List[Action]) -> List[Action]:
+        unique_actions = []
+        for action in actions:
+            if action not in unique_actions:
+                unique_actions.append(action)
+        return unique_actions
 
     def _generate_jake_swap_actions(self, player: PlayerState, jake_cards: list[Card], marbles_in_play: list[Marble]) \
         -> List[Action]:
@@ -419,7 +427,7 @@ class Dog(Game):
         player = self.state.list_player[self.state.idx_player_active]
         player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
 
-    def apply_action(self, action: Action) -> None:
+    def apply_action(self, action: Action) -> None: # pylint: disable=R0912
         """ Apply the given action to the game """
         player = self.state.list_player[self.state.idx_player_active]
         idx_player_active = self.state.idx_player_active
@@ -464,6 +472,7 @@ class Dog(Game):
             self._send_marble_home_if_possible(
                 action, idx_player_active, marble_idx, current_position, destination
             )
+        self._finish_game()
         return None
 
     def _card_seven_logic(self, action: Action, current_position: int, destination: int) -> None:
@@ -490,6 +499,22 @@ class Dog(Game):
             steps_from_start_number = FinishNumbers[player.colour].value.index(destination) + 1
             return steps_to_start_number + steps_from_start_number
         return (destination - current_position) % 64
+
+    def _finish_game(self) -> None:
+        for player in self.state.list_player:
+            finish_positions = FinishNumbers[player.colour].value
+            if self._is_player_in_finish(player, finish_positions):
+                player.finished = True
+
+        if self.state.list_player[0].finished and self.state.list_player[2].finished or \
+           self.state.list_player[1].finished and self.state.list_player[3].finished:
+            self.state.phase = GamePhase.FINISHED
+
+    def _is_player_in_finish(self, player: PlayerState, finish_positions: tuple) -> bool:
+        for marble in player.list_marble:
+            if marble.pos not in finish_positions:
+                return False
+        return True
 
     def _action_none(self, player: PlayerState) -> None:
         if player.list_card:  # pylint: disable=R1702
