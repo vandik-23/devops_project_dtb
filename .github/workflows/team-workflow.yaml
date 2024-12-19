@@ -1,0 +1,54 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # Run the workflow on push to the main branch
+
+  workflow_dispatch: # manual trigger
+
+jobs:
+  deploy-job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Authenticate Google Cloud --> these credential we have to add in Repo Secrets!
+      - name: Authenticate Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          service_account: "${{ secrets.GCLOUD_SERVICE_ACCOUNT_EMAIL }}" # Secret 1
+          project_id: "${{ secrets.GCLOUD_PROJECT_ID }}" # Secret 2
+          workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}" # Secret 3
+
+      # Step 3: Configure gcloud CLI
+      - name: Configure gcloud
+        run: |
+          echo "Configuring gcloud CLI"
+          gcloud auth configure-docker europe-west6-docker.pkg.dev
+          gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
+
+      # Step 4: Build and push Docker image
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest .
+          docker push europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest
+
+      # Step 5: Deploy to Google Cloud Run
+      - name: Deploy to Google Cloud Run
+        run: |
+          gcloud run deploy game-server-service \
+            --image europe-west6-docker.pkg.dev/${{ secrets.GCLOUD_PROJECT_ID }}/cloud-run-app/devops_server_image:latest \
+            --region europe-west6 \
+            --allow-unauthenticated
+
+# We can verify the successful deployment:
+# Go to the Actions tab in your GitHub repository
+# Search for a new workflow run triggered under the name Deploy to Google Cloud Run
+# Click on the workflow run to view the logs and monitor its execution
+# Once the workflow completes successfully, it will print a URL to your deployed Google Cloud Run service in the logs.
