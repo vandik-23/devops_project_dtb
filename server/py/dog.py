@@ -196,6 +196,10 @@ class Dog(Game):
         player = self.state.list_player[self.state.idx_player_active]
         if not self.state.bool_card_exchanged:
             return self._unique_actions(self._generate_card_exchange_actions(player))
+        self._finish_game()
+        if player.finished:
+            partner = self._get_partner()
+            player.list_marble = partner.list_marble
         if self.state.card_active is not None:
             for marble in player.list_marble:
                 if marble.pos in KennelNumbers[player.colour].value:
@@ -241,6 +245,11 @@ class Dog(Game):
             actions = self._generate_jake_swap_actions(player, jake_cards, marbles_in_play)
 
         # Collect all move options for each marbles and cards inhand
+        self._collect_move_options_for_marbles_and_cards(player, marbles_in_play, actions)
+        return self._unique_actions(actions)
+
+    def _collect_move_options_for_marbles_and_cards(self, player: PlayerState, marbles_in_play: List[Marble],
+                                                    actions: List[Action]) -> None:
         for marble in marbles_in_play:
             for card in player.list_card:
                 for move in MOVES[card.rank]:
@@ -249,7 +258,6 @@ class Dog(Game):
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
-        return self._unique_actions(actions)
 
     def _unique_actions(self, actions: List[Action]) -> List[Action]:
         unique_actions = []
@@ -464,7 +472,12 @@ class Dog(Game):
             self._card_seven_logic(action, current_position, destination)
             self.card_seven_metadata.actions.append(action)
 
-        if current_position is not None and destination is not None:
+                # Support partner at the end of the game
+        if player.finished:
+            partner = self._get_partner()
+            partner.list_marble = player.list_marble
+        # If not finished send home player standing on the same field
+        elif current_position is not None and destination is not None:
             self._send_marble_home_if_possible(
                 action, idx_player_active, marble_idx, current_position, destination
             )
@@ -544,9 +557,12 @@ class Dog(Game):
         self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
         return
 
-    def _exchange_cards(self, player: PlayerState, action: Action) -> None:
+    def _get_partner(self) -> PlayerState:
         idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
-        partner = self.state.list_player[idx_partner]
+        return self.state.list_player[idx_partner]
+
+    def _exchange_cards(self, player: PlayerState, action: Action) -> None:
+        partner = self._get_partner()
 
         # Exchange the card
         if action is not None:
