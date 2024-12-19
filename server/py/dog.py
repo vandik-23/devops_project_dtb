@@ -525,27 +525,29 @@ class Dog(Game):
                 return False
         return True
 
+    def _revert_actions(self, player: PlayerState) -> None:
+        for action in self.card_seven_metadata.actions[::-1]: # revert all own actions
+            action.pos_from, action.pos_to = action.pos_to, action.pos_from
+            for marble in player.list_marble:
+                if marble.pos == action.pos_from:
+                    marble.pos = action.pos_to or -1
+                    break
+        for action in self.card_seven_metadata.actions_other_players: # revert all other players actions
+            for player_ in self.state.list_player:
+                for marble in player_.list_marble:
+                    if marble.pos == action.pos_to:
+                        marble.pos = action.pos_from or -1
+                        break
+
     def _action_none(self, player: PlayerState) -> None:
-        if player.list_card:  # pylint: disable=R1702
+        if player.list_card:
             player.list_card = []
             if self.state.card_active is not None:
                 if self.state.card_active.rank == "7" and (
                     self.card_seven_metadata.remaining_steps is None or self.card_seven_metadata.remaining_steps > 0
                 ):
                     self.state.card_active = None
-                    for action in self.card_seven_metadata.actions[::-1]: # revert all own actions
-                        action.pos_from, action.pos_to = action.pos_to, action.pos_from
-                        for marble in player.list_marble:
-                            if marble.pos == action.pos_from:
-                                marble.pos = action.pos_to or -1
-                                break
-
-                    for action in self.card_seven_metadata.actions_other_players: # revert all other players actions
-                        for player_ in self.state.list_player:
-                            for marble in player_.list_marble:
-                                if marble.pos == action.pos_to:
-                                    marble.pos = action.pos_from or -1
-                                    break
+                    self._revert_actions(player)
                 self.card_seven_metadata.remaining_steps = None
             return
         if all(not player.list_card for player in self.state.list_player): # all players have no cards
