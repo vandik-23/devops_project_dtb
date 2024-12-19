@@ -216,6 +216,19 @@ class Dog(Game):
                 for move in MOVES[card.rank]:
                     current_position = marble.pos
                     destination = (current_position + move) % 64
+                    destination_cleaned = destination - StartNumbers[player.colour].value       
+                    if current_position in list(FinishNumbers[player.colour].value) and marble.is_save is False or marble.is_save is False and destination > StartNumbers[player.colour].value and current_position < StartNumbers[player.colour].value and move != -4 or current_position == StartNumbers[player.colour].value and destination_cleaned < 5 and marble.is_save is False:
+                        if current_position in list(FinishNumbers[player.colour].value):
+                            destination_within_finish_list = current_position + move
+                            if self._check_if_save_marble_between_current_and_destination(current_position, destination_within_finish_list):
+                                continue
+                            if destination_within_finish_list in list(FinishNumbers[player.colour].value):
+                                actions.append(Action(card=card, pos_from=current_position, pos_to=destination_within_finish_list))
+                            continue
+                        finish_list = self._generate_finish_positions(player.colour)
+                        destination_cleaned = destination - StartNumbers[player.colour].value
+                        destination_finish = finish_list[destination_cleaned]
+                        actions.append(Action(card=card, pos_from=current_position, pos_to=destination_finish))
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
                         continue
                     actions.append(Action(card=card, pos_from=current_position, pos_to=destination))
@@ -389,6 +402,12 @@ class Dog(Game):
         """Distribute a specific number of cards to each player."""
         player = self.state.list_player[self.state.idx_player_active]
         player.list_card = [self.state.list_card_draw.pop() for _ in range(num_cards)]
+
+    def _generate_finish_positions(self, color: str) -> list:
+        """Generate the combined list of positions for the given color."""
+        start_number = StartNumbers[color].value
+        finish_numbers = list(FinishNumbers[color].value)
+        return [start_number] + finish_numbers
 
     def apply_action(self, action: Action) -> None:
         """ Apply the given action to the game """
