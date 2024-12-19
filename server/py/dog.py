@@ -464,10 +464,6 @@ class Dog(Game):
             self._card_seven_logic(action, current_position, destination)
             self.card_seven_metadata.actions.append(action)
 
-        # Reset card_active nach Joker-Aktionen
-        if self.state.card_active and self.state.card_active == action.card:
-            self.state.card_active = None
-
         if current_position is not None and destination is not None:
             self._send_marble_home_if_possible(
                 action, idx_player_active, marble_idx, current_position, destination
