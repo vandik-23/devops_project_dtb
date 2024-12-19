@@ -256,7 +256,7 @@ class Dog(Game):
                     current_position = marble.pos
                     destination = (current_position + move) % 64
                     destination_cleaned = destination - StartNumbers[player.colour].value       
-                    if current_position in list(FinishNumbers[player.colour].value) and marble.is_save is False or marble.is_save is False and destination > StartNumbers[player.colour].value and current_position < StartNumbers[player.colour].value and move != -4 or current_position == StartNumbers[player.colour].value and destination_cleaned < 5 and marble.is_save is False:
+                    if current_position in list(FinishNumbers[player.colour].value) and marble.is_save is False or marble.is_save is False and destination_cleaned < 5 and move != -4 or current_position == StartNumbers[player.colour].value and destination_cleaned < 5 and marble.is_save is False:
                         if current_position in list(FinishNumbers[player.colour].value):
                             destination_within_finish_list = current_position + move
                             if self._check_if_save_marble_between_current_and_destination(current_position, destination_within_finish_list):
@@ -265,7 +265,6 @@ class Dog(Game):
                                 actions.append(Action(card=card, pos_from=current_position, pos_to=destination_within_finish_list))
                             continue
                         finish_list = self._generate_finish_positions(player.colour)
-                        destination_cleaned = destination - StartNumbers[player.colour].value
                         destination_finish = finish_list[destination_cleaned]
                         actions.append(Action(card=card, pos_from=current_position, pos_to=destination_finish))
                     if self._check_if_save_marble_between_current_and_destination(current_position, destination):
