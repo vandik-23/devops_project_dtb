@@ -458,11 +458,11 @@ class Dog(Game):
         player = self.state.list_player[self.state.idx_player_active]
         idx_player_active = self.state.idx_player_active
 
+        if action is None:
+            return self. _action_none(player)
         if not self.state.bool_card_exchanged:
             self._exchange_cards(player, action)
             return None
-        if action is None:
-            return self. _action_none(player)
         if action.card.rank == "JKR" and action.card_swap is not None:
             return self._process_joker_action(player, action)
         current_position = action.pos_from
@@ -543,37 +543,48 @@ class Dog(Game):
                 return False
         return True
 
+    def _revert_actions(self, player: PlayerState) -> None:
+        for action in self.card_seven_metadata.actions[::-1]: # revert all own actions
+            action.pos_from, action.pos_to = action.pos_to, action.pos_from
+            for marble in player.list_marble:
+                if marble.pos == action.pos_from:
+                    marble.pos = action.pos_to or -1
+                    break
+        for action in self.card_seven_metadata.actions_other_players: # revert all other players actions
+            for player_ in self.state.list_player:
+                for marble in player_.list_marble:
+                    if marble.pos == action.pos_to:
+                        marble.pos = action.pos_from or -1
+                        break
+
     def _action_none(self, player: PlayerState) -> None:
-        if player.list_card:  # pylint: disable=R1702
+        if player.list_card:
             player.list_card = []
             if self.state.card_active is not None:
                 if self.state.card_active.rank == "7" and (
                     self.card_seven_metadata.remaining_steps is None or self.card_seven_metadata.remaining_steps > 0
                 ):
                     self.state.card_active = None
-                    for action in self.card_seven_metadata.actions[::-1]: # revert all own actions
-                        action.pos_from, action.pos_to = action.pos_to, action.pos_from
-                        for marble in player.list_marble:
-                            if marble.pos == action.pos_from:
-                                marble.pos = action.pos_to or -1
-                                break
-
-                    for action in self.card_seven_metadata.actions_other_players: # revert all other players actions
-                        for player_ in self.state.list_player:
-                            for marble in player_.list_marble:
-                                if marble.pos == action.pos_to:
-                                    marble.pos = action.pos_from or -1
-                                    break
+                    self._revert_actions(player)
                 self.card_seven_metadata.remaining_steps = None
             return
         if all(not player.list_card for player in self.state.list_player): # all players have no cards
             self.state.cnt_round += 1
         num_cards = self._calculate_num_card(self.state.cnt_round)
+        if num_cards > len(self.state.list_card_draw):
+            self._reshuffle()
         self._distribute_cards(num_cards)
         if all(player.list_card for player in self.state.list_player):
             self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
         self.state.idx_player_active = (self.state.idx_player_active + 1) % self.state.cnt_player
         return
+
+    def _reshuffle(self) -> None:
+        for player in self.state.list_player:
+            player.list_card = []
+        self.state.list_card_discard = []
+        self.state.list_card_draw = GameState.LIST_CARD
+        random.shuffle(self.state.list_card_draw)
 
     def _get_partner(self) -> PlayerState:
         idx_partner = (self.state.idx_player_active + 2) % self.state.cnt_player # identify partner-player
